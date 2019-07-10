@@ -36,4 +36,5 @@ TARGET_LINK_LIBRARIES(game
 
 ADD_CUSTOM_COMMAND(TARGET game POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/kernels ${CMAKE_BINARY_DIR}/kernels
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/shaders ${CMAKE_BINARY_DIR}/shaders
   )

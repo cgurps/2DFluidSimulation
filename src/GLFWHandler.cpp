@@ -1,5 +1,10 @@
 #include "GLFWHandler.h"
 
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 void CheckOpenGLError(const char* stmt, const char* fname, int line)
 {
   GLenum err = glGetError();
@@ -30,6 +35,34 @@ static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
   glViewport(0, 0, width, height);
 }
 
+static GLuint compile_shader(const std::string& s, GLenum type)
+{
+  std::ifstream shader_file(s);
+  std::ostringstream shader_buffer;
+  shader_buffer << shader_file.rdbuf();
+  std::string shader_string = shader_buffer.str();
+  const GLchar *shader_source = shader_string.c_str();
+
+  GLuint shader_id = glCreateShader(type);
+  glShaderSource(shader_id, 1, &shader_source, NULL);
+  glCompileShader(shader_id);
+
+  GLint status;
+  glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status);
+
+  if(status == GL_TRUE) return shader_id;
+  else
+  {
+    GLint max_length = 0;
+    glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &max_length);
+    char buffer[max_length];
+    glGetShaderInfoLog(shader_id, max_length, &max_length, buffer);
+    glDeleteShader(shader_id);
+    std::cout << buffer << std::endl;
+    exit(1);
+  }
+}
+
 GLFWHandler::GLFWHandler(int width, int height)
   : width(width), height(height)
 {
@@ -53,6 +86,10 @@ GLFWHandler::GLFWHandler(int width, int height)
     std::cerr << "Failed to initialize GLAD" << std::endl;
 
   glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
+  //Compiling shaders
+  GLuint vertex_shader = compile_shader("shaders/vertex.glsl", GL_VERTEX_SHADER);
+  GLuint fragment_shader = compile_shader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
 }
 
 GLFWHandler::~GLFWHandler()
