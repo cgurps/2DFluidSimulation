@@ -10,9 +10,8 @@ int main(int argc, char** argv)
     int simWidth = 512, simHeight = 512;
 
     GLFWHandler handler(windowWidth, windowHeight);
-    handler.Init();
 
-    OpenCLWrapper ocl(simWidth, simHeight);
+    OpenCLWrapper ocl(simWidth, simHeight, &handler);
 
     SimpleFluid sFluid(&ocl);
     sFluid.Init();

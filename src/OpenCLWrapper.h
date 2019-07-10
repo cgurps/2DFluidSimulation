@@ -2,12 +2,13 @@
 #define OPENCLWRAPPER_H
 
 #include "CLUtils.h"
+#include "GLFWHandler.h"
 
 class OpenCLWrapper
 {
   public:
     OpenCLWrapper() = delete;
-    OpenCLWrapper(int width, int height);
+    OpenCLWrapper(int width, int height, GLFWHandler* handler);
 
     int width, height;
 

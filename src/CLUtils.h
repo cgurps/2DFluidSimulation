@@ -6,6 +6,8 @@
 #ifdef __APPLE__
 #define CL_SILENCE_DEPRECATION
 #include <OpenGL/OpenGL.h>
+#else
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #endif
 
 #include "cl.h"
