@@ -18,7 +18,7 @@ FIND_PACKAGE(glfw3 3.3 REQUIRED)
 #ENDIF()
 
 ADD_EXECUTABLE(
-    game
+    sim
     src/main.cpp
     src/GLFWHandler.cpp
     src/glad.c
@@ -27,14 +27,14 @@ ADD_EXECUTABLE(
     src/SimpleFluid.cpp
 )
 
-TARGET_LINK_LIBRARIES(game
+TARGET_LINK_LIBRARIES(sim
     glfw
     OpenCL::OpenCL
     OpenGL::GL
     ${CMAKE_DL_LIBS}
     )
 
-ADD_CUSTOM_COMMAND(TARGET game POST_BUILD
+ADD_CUSTOM_COMMAND(TARGET sim POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/kernels ${CMAKE_BINARY_DIR}/kernels
   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/shaders ${CMAKE_BINARY_DIR}/shaders
   )
