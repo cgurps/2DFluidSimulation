@@ -47,17 +47,13 @@ void SimpleFluid::Init()
 
     //Preparing Kernels
     advectKernel = cl::Kernel(program, "advect");
-
     divergenceKernel = cl::Kernel(program, "divergence");
-
     jacobiKernel = cl::Kernel(program, "jacobi");
-
     pressureProjectionKernel = cl::Kernel(program, "pressureProjection");
 
     //OpenGL Texture write
     writeToTextureKernel = cl::Kernel(program, "writeToTexture");
     writeToTextureKernel.setArg(0, imageGL);
-
   }
   catch (cl::Error& e)
   {
@@ -115,4 +111,12 @@ void SimpleFluid::Update()
   {
     cl_ok(e.err());
   }
+}
+
+void SimpleFluid::UpdateSimulation()
+{
+  advectKernel.setArg(0, velocitiesBuffer[READ]);
+  advectKernel.setArg(1, velocitiesBuffer[READ]);
+  advectKernel.setArg(2, velocitiesBuffer[WRITE]);
+  advectKernel.setArg(3, 0.1f);
 }

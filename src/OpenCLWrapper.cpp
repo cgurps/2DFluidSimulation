@@ -1,4 +1,5 @@
 #include "OpenCLWrapper.h"
+#include "GLFWHandler.h"
 
 #include <vector>
 #include <iostream>

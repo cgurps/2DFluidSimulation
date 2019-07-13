@@ -13,6 +13,8 @@ class SimpleFluid : public SimulationBase
     void Update();
 
   private:
+    void UpdateSimulation();
+
     int READ = 0, WRITE = 1;
 
     cl::Program program;
