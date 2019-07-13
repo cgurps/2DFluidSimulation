@@ -15,26 +15,31 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-void CheckOpenGLError(const char* stmt, const char* fname, int line);
+#include "GLUtils.h"
 
-#define GL_CHECK(stmt) do { \
-        stmt; \
-        CheckOpenGLError(#stmt, __FILE__, __LINE__); \
-    } while (0)
+class SimulationBase;
 
 class GLFWHandler
 {
-    public:
-        GLFWHandler() = delete; 
-        GLFWHandler(int width, int height);
+  public:
+    GLFWHandler() = delete; 
+    GLFWHandler(int width, int height);
 
-        ~GLFWHandler();
+    ~GLFWHandler();
 
-        void Run();
+    void AttachSimulation(SimulationBase* sim);
 
-        int width, height;
+    void Run();
 
-        GLFWwindow* window;
+    int width, height;
+
+    GLFWwindow* window;
+
+  private:
+    GLuint vertex_shader, fragment_shader, shader_program;
+    GLuint vao, vbo;
+
+    SimulationBase* simulation;
 };
 
 #endif //GLFWHANDLER_H

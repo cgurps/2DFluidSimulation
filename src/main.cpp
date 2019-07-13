@@ -16,6 +16,7 @@ int main(int argc, char** argv)
     SimpleFluid sFluid(&ocl);
     sFluid.Init();
 
+    handler.AttachSimulation(&sFluid);
     handler.Run();
 
     return 0;

@@ -2,7 +2,8 @@
 #define OPENCLWRAPPER_H
 
 #include "CLUtils.h"
-#include "GLFWHandler.h"
+
+class GLFWHandler;
 
 class OpenCLWrapper
 {

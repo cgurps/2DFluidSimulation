@@ -1,38 +1,14 @@
 #include "GLFWHandler.h"
+#include "SimulationBase.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 
-void CheckOpenGLError(const char* stmt, const char* fname, int line)
-{
-  GLenum err = glGetError();
-  if (err != GL_NO_ERROR)
-  {
-    std::string error;
-    switch(err)
-    {
-      case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
-      case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
-      case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
-      case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
-      case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
-    }
-
-    printf("OpenGL error %s, at %s:%i - for %s\n", error.c_str(), fname, line, stmt);
-    exit(1);
-  }
-}
-
 static void glfwErrorCallback(int error, const char* description)
 {
-  std::cerr << "Error: " << description << std::endl;
-}
-
-static void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-  glViewport(0, 0, width, height);
+  std::cerr << "Error(" << error << "): " << description << std::endl;
 }
 
 static GLuint compile_shader(const std::string& s, GLenum type)
@@ -85,11 +61,42 @@ GLFWHandler::GLFWHandler(int width, int height)
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     std::cerr << "Failed to initialize GLAD" << std::endl;
 
-  glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+  printf("OpenGL version supported by this platform (%s): \n",
+      glGetString(GL_VERSION));
+  printf("Supported GLSL version is %s.\n",
+      glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-  //Compiling shaders
-  GLuint vertex_shader = compile_shader("shaders/vertex.glsl", GL_VERTEX_SHADER);
-  GLuint fragment_shader = compile_shader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
+  GL_CHECK(glGenVertexArrays(1, &vao));
+  GL_CHECK(glBindVertexArray(vao));
+
+  std::cout << "VAO Created." << std::endl;
+
+  float vertices[] = {
+    -1.0f, -1.0f,
+    -1.0f,  1.0f,
+    1.0f, -1.0f,
+    1.0f,  1.0f
+  };
+
+  GL_CHECK(glGenBuffers(1, &vbo));
+  GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+  GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
+
+  std::cout << "VBO Created." << std::endl;
+
+  vertex_shader = compile_shader("shaders/vertex.glsl", GL_VERTEX_SHADER);
+  fragment_shader = compile_shader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
+
+  shader_program = glCreateProgram();
+  GL_CHECK(glAttachShader(shader_program, vertex_shader));
+  GL_CHECK(glAttachShader(shader_program, fragment_shader));
+  GL_CHECK(glBindFragDataLocation(shader_program, 0, "out_color") );
+  GL_CHECK(glLinkProgram(shader_program));
+  GL_CHECK(glUseProgram(shader_program));
+
+  GLint posAttrib = glGetAttribLocation(shader_program, "position");
+  GL_CHECK(glEnableVertexAttribArray(posAttrib));
+  GL_CHECK(glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0));
 }
 
 GLFWHandler::~GLFWHandler()
@@ -98,32 +105,50 @@ GLFWHandler::~GLFWHandler()
   glfwTerminate();
 }
 
+void GLFWHandler::AttachSimulation(SimulationBase* sim)
+{
+  simulation = sim;
+}
+
 void GLFWHandler::Run()
 {
+  const float matrix[16] =
+  {
+      1.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 1.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 1.0f
+  };
+
   while (!glfwWindowShouldClose(window))
   {
+    simulation->Update();
+
     glfwPollEvents();
-    /*
-       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-       glClearColor(0.2, 0.2, 0.2, 0.0);
-       glEnable(GL_DEPTH_TEST);
+
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    GL_CHECK(glClearColor(0.0, 0.0, 0.0, 0.0));
+    GL_CHECK(glEnable(GL_DEPTH_TEST));
     // bind shader
-    glUseProgram(rparams.prg);
+    GL_CHECK(glUseProgram(shader_program));
     // get uniform locations
-    int mat_loc = glGetUniformLocation(rparams.prg, "matrix");
-    int tex_loc = glGetUniformLocation(rparams.prg, "tex");
+    int mat_loc = glGetUniformLocation(shader_program, "MVP");
+    int tex_loc = glGetUniformLocation(shader_program, "tex");
     // bind texture
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(tex_loc, 0);
-    glBindTexture(GL_TEXTURE_2D, rparams.tex);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    GL_CHECK(glActiveTexture(GL_TEXTURE0));
+    GL_CHECK(glUniform1i(tex_loc, 0));
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, simulation->shared_texture));
+    //glGenerateMipmap(GL_TEXTURE_2D);
     // set project matrix
-    glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix);
+    GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
     // now render stuff
-    glBindVertexArray(rparams.vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    /*
+    GL_CHECK(glBindVertexArray(vao));
+    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+    GL_CHECK(glBindVertexArray(0));
     */
+
     glfwSwapBuffers(window);
   }
 }
