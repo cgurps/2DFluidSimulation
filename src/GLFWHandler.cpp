@@ -47,8 +47,8 @@ GLFWHandler::GLFWHandler(int width, int height)
   if(!glfwInit())
     std::cerr << "GLFW Init failed!" << std::endl;
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -122,6 +122,9 @@ void GLFWHandler::Run()
       0.0f, 0.0f, 0.0f, 1.0f
   };
 
+  int mat_loc = glGetUniformLocation(shader_program, "MVP");
+  int tex_loc = glGetUniformLocation(shader_program, "tex");
+
   while (!glfwWindowShouldClose(window))
   {
     simulation->Update();
@@ -129,27 +132,18 @@ void GLFWHandler::Run()
     glfwPollEvents();
 
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    GL_CHECK(glClearColor(0.0, 0.0, 0.0, 0.0));
+    GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
     GL_CHECK(glEnable(GL_DEPTH_TEST));
     // bind shader
     GL_CHECK(glUseProgram(shader_program));
-    // get uniform locations
-    int mat_loc = glGetUniformLocation(shader_program, "MVP");
-    int tex_loc = glGetUniformLocation(shader_program, "tex");
     // bind texture
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
     GL_CHECK(glUniform1i(tex_loc, 0));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, simulation->shared_texture));
-    //glGenerateMipmap(GL_TEXTURE_2D);
     // set project matrix
     GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
     // now render stuff
     GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
-    /*
-    GL_CHECK(glBindVertexArray(vao));
-    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-    GL_CHECK(glBindVertexArray(0));
-    */
 
     glfwSwapBuffers(window);
   }

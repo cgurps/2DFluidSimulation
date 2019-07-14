@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 cl::Image2D create2DImage(OpenCLWrapper *ocl)
 {
@@ -66,17 +67,21 @@ void writeVelocities(OpenCLWrapper *ocl, cl::Image2D *image)
 {
   try
   {
-    std::vector<float> pixels(4 * ocl->width * ocl->height);
+    std::vector<float> pixels(4 * ocl->width * ocl->height, 0.0f);
+    /*
     for(int y = 0; y < ocl->height; ++y)
     {
       for(int x = 0; x < ocl->width; ++x)
       {
-        pixels[4 * (y * ocl->width + x)    ] = 1.0f;
-        pixels[4 * (y * ocl->width + x) + 1] = 0.0f;
+        pixels[4 * (y * ocl->width + x)    ] = std::sin(2.0 * M_PI * (double) y / (double) ocl->height);
+        pixels[4 * (y * ocl->width + x) + 1] = std::sin(2.0 * M_PI * (double) x / (double) ocl->width);
         pixels[4 * (y * ocl->width + x) + 2] = 0.0f;
-        pixels[4 * (y * ocl->width + x) + 3] = 0.0f;
+        pixels[4 * (y * ocl->width + x) + 3] = 1.0f;
+
+        //std::cout << x << " " << y << " " << pixels[4 * (y * ocl->width + x)] << " " << pixels[4 * (y * ocl->width + x) + 1] << std::endl;
       }
     }
+    */
 
     cl::array<cl::size_type, 3> origin = {0, 0, 0};
     cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
@@ -105,7 +110,7 @@ cl::Buffer createBuffer(OpenCLWrapper *ocl, const size_t size, const T value)
 
 void SimpleFluid::Init()
 {
-  std::ifstream file("kernels/fluid.cs"); 
+  std::ifstream file("kernels/fluid.cs");
   std::ostringstream file_buffer;
   file_buffer << file.rdbuf();
 
@@ -118,8 +123,8 @@ void SimpleFluid::Init()
     std::cout << "Successfully built the OpenCL kernels" << std::endl;
 
     //Generating Buffers and Images
-    velocitiesBuffer[READ] = create2DImage(ocl); 
-    velocitiesBuffer[WRITE] = create2DImage(ocl); 
+    velocitiesBuffer[READ] = create2DImage(ocl);
+    velocitiesBuffer[WRITE] = create2DImage(ocl);
     writeVelocities(ocl, velocitiesBuffer);
 
     pressureBuffer[READ] = create2DImage(ocl);
@@ -153,7 +158,7 @@ void SimpleFluid::Init()
         cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(dev);
         if (status != CL_BUILD_ERROR)
           continue;
-  
+
         // Get the build log
         std::string name     = dev.getInfo<CL_DEVICE_NAME>();
         std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(dev);
@@ -214,7 +219,7 @@ void SimpleFluid::Update()
     ocl->command_queue.finish();
 
     //Solving
-    for(int k = 0; k < 45; ++k)
+    for(int k = 0; k < 25; ++k)
     {
       jacobiKernel.setArg(1, pressureBuffer[READ]);
       jacobiKernel.setArg(2, pressureBuffer[WRITE]);

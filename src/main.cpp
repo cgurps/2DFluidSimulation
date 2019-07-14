@@ -7,7 +7,7 @@
 int main(int argc, char** argv)
 {
     int windowWidth = 800, windowHeight = 600;
-    int simWidth = 512, simHeight = 512;
+    int simWidth = 1024, simHeight = 1024;
 
     GLFWHandler handler(windowWidth, windowHeight);
 
