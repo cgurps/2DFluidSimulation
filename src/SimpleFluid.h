@@ -21,15 +21,18 @@ class SimpleFluid : public SimulationBase
 
     cl::Image2D velocitiesBuffer[2];
     cl::Image2D pressureBuffer[2];
+    cl::Image2D fieldBuffer[2];
+
+    cl::Image2D emptyBuffer;
 
     cl::Buffer divergenceBuffer;
-    cl::Buffer dummyBuffer;
+
+    cl::Buffer deltaTimeBuffer;
 
     cl::Kernel advectKernel;
     cl::Kernel divergenceKernel;
     cl::Kernel jacobiKernel;
     cl::Kernel pressureProjectionKernel;
-    cl::Kernel writeToTextureKernel;
 };
 
 #endif //SIMPLEFLUID_H

@@ -66,6 +66,8 @@ GLFWHandler::GLFWHandler(int width, int height)
   printf("Supported GLSL version is %s.\n",
       glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+  glfwSwapInterval(1);
+
   GL_CHECK(glGenVertexArrays(1, &vao));
   GL_CHECK(glBindVertexArray(vao));
 

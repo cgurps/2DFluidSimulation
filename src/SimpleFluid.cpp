@@ -7,19 +7,100 @@
 
 cl::Image2D create2DImage(OpenCLWrapper *ocl)
 {
-  return cl::Image2D(ocl->context,
-      CL_MEM_READ_WRITE,
-      cl::ImageFormat(CL_RGBA, CL_FLOAT),
-      ocl->width,
-      ocl->height
-      );
+  try
+  {
+    cl::Image2D image = cl::Image2D(ocl->context,
+        CL_MEM_READ_WRITE,
+        cl::ImageFormat(CL_RGBA, CL_FLOAT),
+        ocl->width, ocl->height);
+
+    cl_float4 emp; emp.x = 0.0f; emp.y = 0.0f; emp.z = 0.0f; emp.w = 0.0f;
+    cl::array<cl::size_type, 3> origin = {0, 0, 0};
+    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
+    ocl->command_queue.enqueueFillImage(image, emp, origin, region);
+
+    return image;
+  }
+  catch(cl::Error& e)
+  {
+    throw e;
+  }
 }
 
-cl::Buffer createBuffer(OpenCLWrapper *ocl)
+void writeChestToImage(OpenCLWrapper *ocl, cl::Image2D *image)
 {
-  return cl::Buffer(ocl->context,
-      CL_MEM_READ_WRITE,
-      ocl->width * ocl->height);
+  try
+  {
+    std::vector<float> pixels(4 * ocl->width * ocl->height);
+    for(int y = 0; y < ocl->height; ++y)
+    {
+      for(int x = 0; x < ocl->width; ++x)
+      {
+        if(x % 50 > 25 && y % 50 > 25)
+        {
+          pixels[4 * (y * ocl->width + x)] = 1.0f;
+          pixels[4 * (y * ocl->width + x) + 1] = 1.0f;
+          pixels[4 * (y * ocl->width + x) + 2] = 1.0f;
+        }
+        else
+        {
+          pixels[4 * (y * ocl->width + x)] = 0.0f;
+          pixels[4 * (y * ocl->width + x) + 1] = 0.0f;
+          pixels[4 * (y * ocl->width + x) + 2] = 0.0f;
+        }
+        pixels[4 * (y * ocl->width + x) + 3] = 1.0f;
+      }
+    }
+
+    cl::array<cl::size_type, 3> origin = {0, 0, 0};
+    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
+    ocl->command_queue.enqueueWriteImage(*image, CL_TRUE, origin, region, 0, 0, pixels.data());
+  }
+  catch(cl::Error& e)
+  {
+    throw e;
+  }
+}
+
+void writeVelocities(OpenCLWrapper *ocl, cl::Image2D *image)
+{
+  try
+  {
+    std::vector<float> pixels(4 * ocl->width * ocl->height);
+    for(int y = 0; y < ocl->height; ++y)
+    {
+      for(int x = 0; x < ocl->width; ++x)
+      {
+        pixels[4 * (y * ocl->width + x)    ] = 1.0f;
+        pixels[4 * (y * ocl->width + x) + 1] = 0.0f;
+        pixels[4 * (y * ocl->width + x) + 2] = 0.0f;
+        pixels[4 * (y * ocl->width + x) + 3] = 0.0f;
+      }
+    }
+
+    cl::array<cl::size_type, 3> origin = {0, 0, 0};
+    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
+    ocl->command_queue.enqueueWriteImage(*image, CL_TRUE, origin, region, 0, 0, pixels.data());
+  }
+  catch(cl::Error& e)
+  {
+    throw e;
+  }
+}
+
+template<typename T>
+cl::Buffer createBuffer(OpenCLWrapper *ocl, const size_t size, const T value)
+{
+  try
+  {
+    std::vector<T> dummy(size, value);
+    return cl::Buffer(ocl->context,
+        dummy.begin(), dummy.end(), false);
+  }
+  catch(cl::Error& e)
+  {
+    throw e;
+  }
 }
 
 void SimpleFluid::Init()
@@ -34,26 +115,33 @@ void SimpleFluid::Init()
     program = cl::Program(ocl->context, file_buffer.str());
     program.build({ocl->device});
 
+    std::cout << "Successfully built the OpenCL kernels" << std::endl;
+
     //Generating Buffers and Images
     velocitiesBuffer[READ] = create2DImage(ocl); 
     velocitiesBuffer[WRITE] = create2DImage(ocl); 
+    writeVelocities(ocl, velocitiesBuffer);
 
     pressureBuffer[READ] = create2DImage(ocl);
     pressureBuffer[WRITE] = create2DImage(ocl);
 
-    divergenceBuffer = createBuffer(ocl);
+    fieldBuffer[READ] = create2DImage(ocl);
+    fieldBuffer[WRITE] = create2DImage(ocl);
+    writeChestToImage(ocl, fieldBuffer);
 
-    dummyBuffer = createBuffer(ocl);
+    emptyBuffer = create2DImage(ocl);
+
+    divergenceBuffer = createBuffer(ocl, ocl->width * ocl->height, 0.0f);
+
+    deltaTimeBuffer = createBuffer(ocl, 1, 0.1f);
+
+    std::cout << "Buffers Initialized" << std::endl;
 
     //Preparing Kernels
     advectKernel = cl::Kernel(program, "advect");
     divergenceKernel = cl::Kernel(program, "divergence");
     jacobiKernel = cl::Kernel(program, "jacobi");
     pressureProjectionKernel = cl::Kernel(program, "pressureProjection");
-
-    //OpenGL Texture write
-    writeToTextureKernel = cl::Kernel(program, "writeToTexture");
-    writeToTextureKernel.setArg(0, imageGL);
   }
   catch (cl::Error& e)
   {
@@ -91,20 +179,80 @@ void SimpleFluid::Update()
   {
     cl::Event event;
 
-    std::vector<cl::Memory> objects(1, imageGL);
-
-    glFinish();
-
-    ocl->command_queue.enqueueAcquireGLObjects(&objects, NULL, &event); event.wait();
-
     cl::NDRange local(16, 16);
     cl::NDRange global(local[0] * f(ocl->width , local[0]),
                        local[1] * f(ocl->height, local[1]));
 
-    ocl->command_queue.enqueueNDRangeKernel(writeToTextureKernel, cl::NullRange, global, local);
+    /********** ADVECTION KERNEL **********/
+    advectKernel.setArg(0, velocitiesBuffer[READ]);
+    advectKernel.setArg(1, velocitiesBuffer[READ]);
+    advectKernel.setArg(2, velocitiesBuffer[WRITE]);
+    advectKernel.setArg(3, deltaTimeBuffer);
 
+    ocl->command_queue.enqueueNDRangeKernel(advectKernel, cl::NullRange, global, local);
+    ocl->command_queue.finish();
+
+    std::swap(velocitiesBuffer[READ], velocitiesBuffer[WRITE]);
+
+    /********** DIVERGENCE KERNEL **********/
+    divergenceKernel.setArg(0, velocitiesBuffer[READ]);
+    divergenceKernel.setArg(1, divergenceBuffer);
+    divergenceKernel.setArg(2, deltaTimeBuffer);
+
+    ocl->command_queue.enqueueNDRangeKernel(divergenceKernel, cl::NullRange, global, local);
+    ocl->command_queue.finish();
+
+    /********** JACOBI KERNEL **********/
+    jacobiKernel.setArg(0, divergenceBuffer);
+    jacobiKernel.setArg(3, deltaTimeBuffer);
+
+    //Initialization
+    jacobiKernel.setArg(1, emptyBuffer);
+    jacobiKernel.setArg(2, pressureBuffer[READ]);
+
+    ocl->command_queue.enqueueNDRangeKernel(jacobiKernel, cl::NullRange, global, local);
+    ocl->command_queue.finish();
+
+    //Solving
+    for(int k = 0; k < 45; ++k)
+    {
+      jacobiKernel.setArg(1, pressureBuffer[READ]);
+      jacobiKernel.setArg(2, pressureBuffer[WRITE]);
+
+      ocl->command_queue.enqueueNDRangeKernel(jacobiKernel, cl::NullRange, global, local);
+      ocl->command_queue.finish();
+
+      std::swap(pressureBuffer[READ], pressureBuffer[WRITE]);
+    }
+
+    /********** PRESSURE PROJECTION **********/
+    pressureProjectionKernel.setArg(0, pressureBuffer[READ]);
+    pressureProjectionKernel.setArg(1, velocitiesBuffer[READ]);
+    pressureProjectionKernel.setArg(2, velocitiesBuffer[WRITE]);
+    pressureProjectionKernel.setArg(3, deltaTimeBuffer);
+
+    ocl->command_queue.enqueueNDRangeKernel(pressureProjectionKernel, cl::NullRange, global, local);
+    ocl->command_queue.finish();
+    
+    std::swap(velocitiesBuffer[READ], velocitiesBuffer[WRITE]);
+
+    /********** FIELD ADVECTION KERNEL **********/
+    advectKernel.setArg(0, velocitiesBuffer[READ]);
+    advectKernel.setArg(1, fieldBuffer[READ]);
+    advectKernel.setArg(2, fieldBuffer[WRITE]);
+    advectKernel.setArg(3, deltaTimeBuffer);
+
+    ocl->command_queue.enqueueNDRangeKernel(advectKernel, cl::NullRange, global, local);
+    ocl->command_queue.finish();
+
+    std::swap(fieldBuffer[READ], fieldBuffer[WRITE]);
+
+    std::vector<cl::Memory> objects(1, imageGL); glFinish();
+    ocl->command_queue.enqueueAcquireGLObjects(&objects, NULL, &event); event.wait();
+    ocl->command_queue.enqueueCopyImage(fieldBuffer[READ], imageGL, 
+        {0, 0, 0}, {0, 0, 0}, {(unsigned long) ocl->width, (unsigned long)ocl->height, 1});
+    ocl->command_queue.finish();
     ocl->command_queue.enqueueReleaseGLObjects(&objects, NULL, &event); event.wait();
-
     ocl->command_queue.finish();
   }
   catch(cl::Error& e)
@@ -115,8 +263,5 @@ void SimpleFluid::Update()
 
 void SimpleFluid::UpdateSimulation()
 {
-  advectKernel.setArg(0, velocitiesBuffer[READ]);
-  advectKernel.setArg(1, velocitiesBuffer[READ]);
-  advectKernel.setArg(2, velocitiesBuffer[WRITE]);
-  advectKernel.setArg(3, 0.1f);
+
 }
