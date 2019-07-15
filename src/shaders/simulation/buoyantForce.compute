@@ -1,0 +1,27 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+uniform float dt;
+uniform float kappa;
+uniform float sigma;
+uniform float t0;
+
+layout(rgba32f, binding = 0) uniform image2D velocities_READ_WRITE;
+layout(rgba32f, binding = 1) uniform sampler2D temperature;
+layout(rgba32f, binding = 2) uniform sampler2D density;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / vec2(texSize);
+  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+
+  float t = texture2D(temperature, texCoords).x;
+  float d = texture2D(density, texCoords).x;
+
+  vec2 force = (- kappa * d + sigma * (t - t0)) * vec2(0.0f, - 1.0f);
+  vec4 oldVel = imageLoad(velocities_READ_WRITE, pixelCoords);
+
+  imageStore(velocities_READ_WRITE, pixelCoords, oldVel + dt * vec4(force, 0.0f, 0.0f));
+}

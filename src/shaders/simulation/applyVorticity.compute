@@ -1,0 +1,31 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+uniform float dt;
+
+layout(rgba32f, binding = 0) uniform image2D velocities_READ_WRITE;
+layout(rgba32f, binding = 1) uniform sampler2D vorticity;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / vec2(texSize);
+  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+
+  float vC = texture2D(vorticity, texCoords).x;
+  float vL = texture2D(vorticity, texCoords - dx).x;
+  float vR = texture2D(vorticity, texCoords + dx).x;
+  float vB = texture2D(vorticity, texCoords - dy).x;
+  float vT = texture2D(vorticity, texCoords + dy).x;
+
+  vec2 force = 0.5f * vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
+
+  const float EPSILON = 2.4414e-4f;
+  float magSqr = max(EPSILON, dot(force, force));
+  force = force * sqrt(magSqr);
+
+  force *= vC * vec2(1.0f, -1.0f);
+
+  imageStore(velocities_READ_WRITE, pixelCoords, imageLoad(velocities_READ_WRITE, pixelCoords) + dt * vec4(force, 0.0f, 0.0f));
+}

@@ -1,0 +1,26 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+
+layout(rgba32f, binding = 0) uniform image2D velocities_WRITE;
+layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
+layout(rgba32f, binding = 2) uniform sampler2D pressure_READ;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / vec2(texSize);
+  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+
+  float pL = texture2D(pressure_READ, texCoords - dx).x;
+  float pR = texture2D(pressure_READ, texCoords + dx).x;
+  float pB = texture2D(pressure_READ, texCoords - dy).x;
+  float pT = texture2D(pressure_READ, texCoords + dy).x;
+
+  vec2 gradP = 0.5f * vec2(pR - pL, pT - pB);
+
+  vec2 oldVel = texture2D(velocities_READ, texCoords).xy;
+
+  imageStore(velocities_WRITE, pixelCoords, vec4(oldVel - gradP, 0.0f, 0.0f));
+}

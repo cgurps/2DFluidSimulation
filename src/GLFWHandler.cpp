@@ -79,6 +79,28 @@ void GLFWHandler::AttachSimulation(SimulationBase* sim)
   simulation = sim;
 }
 
+/********** Event Callbacks **********/
+
+static void mouseCallBack(GLFWwindow* window, int button, int action, int mods)
+{ 
+  if(button == GLFW_MOUSE_BUTTON_LEFT)
+  {
+    GLFWHandler *handler = (GLFWHandler*) glfwGetWindowUserPointer(window);
+    if(action == GLFW_PRESS || handler->leftMouseButtonLastState == GLFW_PRESS)
+      handler->simulation->AddSplat();
+    else if(action == GLFW_RELEASE)
+      handler->simulation->RemoveSplat();
+  }
+}
+
+/*************************************/
+
+void GLFWHandler::RegisterEvent()
+{
+  glfwSetWindowUserPointer(window, this);  
+  glfwSetMouseButtonCallback(window, mouseCallBack);
+}
+
 void GLFWHandler::Run()
 {
   const float matrix[16] =

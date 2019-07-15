@@ -2,24 +2,38 @@
 #define SIMPLEFLUID_H
 
 #include "SimulationBase.h"
+#include "SimulationFactory.h"
+#include "GLFWHandler.h"
 
 class SimpleFluid : public SimulationBase
 {
   public:
-    SimpleFluid(const int width, const int height)
-      : SimulationBase(width, height) {}
+    SimpleFluid(const int width, const int height, const float dt)
+      : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
 
-    void Init();
-    void Update();
+    void Init() override;
+    void Update() override;
 
+    void SetHandler(GLFWHandler* hand);
+
+    void AddSplat() override;
+    void RemoveSplat() override;
   private:
     int READ = 0, WRITE = 1;
 
-    GLint copyProgram;
-    GLint advectProgram;
+    SimulationFactory sFact;
 
-    GLuint velocitiesTexture[2];
-    GLuint dummyTexture[2];
+    bool addSplat = false;
+
+    GLuint velocitiesTexture[4];
+    GLuint density[4];
+    GLuint temperature[4];
+    GLuint divergenceTexture;
+    GLuint pressureTexture[2];
+    GLuint vorticity;
+    GLuint emptyTexture;
+
+    GLFWHandler* handler;
 };
 
 #endif //SIMPLEFLUID_H

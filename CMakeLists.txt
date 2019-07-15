@@ -26,6 +26,7 @@ ADD_EXECUTABLE(
     src/OpenCLWrapper.cpp
     src/SimpleFluid.cpp
     src/GLUtils.cpp
+    src/SimulationFactory.cpp
 )
 
 TARGET_LINK_LIBRARIES(sim

@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-#include "CLUtils.h"
-
 #include "GLUtils.h"
 
 class SimulationBase;
@@ -18,6 +16,7 @@ class GLFWHandler
     ~GLFWHandler();
 
     void AttachSimulation(SimulationBase* sim);
+    void RegisterEvent();
 
     void Run();
 
@@ -25,11 +24,12 @@ class GLFWHandler
 
     GLFWwindow* window;
 
+    SimulationBase* simulation;
+
+    int leftMouseButtonLastState = GLFW_RELEASE;
   private:
     GLuint vertex_shader, fragment_shader, shader_program;
     GLuint vao, vbo;
-
-    SimulationBase* simulation;
 };
 
 #endif //GLFWHANDLER_H

@@ -1,0 +1,21 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+uniform ivec2 spotPos;
+
+layout(rgba32f, binding = 0) uniform image2D density;
+layout(rgba32f, binding = 1) uniform image2D temperature;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 p = pixelCoords - spotPos;
+
+  vec3 splat = exp(- length(p) * length(p) / 500.0f) * vec3(1.0f, 1.0f, 1.0f);
+  vec3 baseD = imageLoad(density, pixelCoords).xyz;
+  vec3 baseT = imageLoad(temperature, pixelCoords).xyz;
+
+  imageStore(density, pixelCoords, vec4(baseD + splat, 1.0f));
+  imageStore(temperature, pixelCoords, vec4(baseT + 25.0f * splat, 1.0f));
+}

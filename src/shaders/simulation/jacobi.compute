@@ -1,0 +1,26 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+uniform float alpha;
+uniform float beta;
+
+layout(rgba32f, binding = 0) uniform image2D pressure_WRITE;
+layout(rgba32f, binding = 1) uniform sampler2D pressure_READ;
+layout(rgba32f, binding = 2) uniform sampler2D divergence;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / vec2(texSize);
+  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+
+  vec4 dC = texture2D(divergence, texCoords);
+
+  vec4 pL = texture2D(pressure_READ, texCoords - dx);
+  vec4 pR = texture2D(pressure_READ, texCoords + dx);
+  vec4 pB = texture2D(pressure_READ, texCoords - dy);
+  vec4 pT = texture2D(pressure_READ, texCoords + dy);
+
+  imageStore(pressure_WRITE, pixelCoords, (pL + pR + pB + pT + alpha * dC) * beta);
+}

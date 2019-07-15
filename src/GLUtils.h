@@ -20,3 +20,4 @@ void CheckOpenGLError(const char* stmt, const char* fname, int line);
 GLuint createTexture2D(const int width, const int height);
 GLuint compileShader(const std::string& s, GLenum type);
 GLuint compileAndLinkShader(const std::string& s, GLenum type);
+void releaseSamplers(int n);

@@ -5,36 +5,6 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include <functional>
-#include <tuple>
-
-void fillTextureWithFunctor(GLuint tex, 
-    const int width, 
-    const int height, 
-    std::function<std::tuple<float, float, float, float>(int, int)> f)
-{
-  float *data = new float[4 * width * height];
-
-  for(int x = 0; x < width; ++x)
-  {
-    for(int y = 0; y < height; ++y)
-    {
-      const int pos = 4 * (y * width + x);
-
-      auto [r, g, b, a] = f(x, y);
-
-      data[pos    ] = r;
-      data[pos + 1] = g;
-      data[pos + 2] = g;
-      data[pos + 3] = a;
-    }
-  }
-
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, tex) );
-  GL_CHECK( glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, data) );
-
-  delete [] data;
-}
 
 void SimpleFluid::Init()
 {
@@ -57,49 +27,143 @@ void SimpleFluid::Init()
     work_grp_size[0], work_grp_size[1], work_grp_size[2]);
   printf("Max local work group invocations %i\n", work_grp_inv);
 
-  dummyTexture[READ] = createTexture2D(width, height);
-  dummyTexture[WRITE] = createTexture2D(width, height);
-  fillTextureWithFunctor(dummyTexture[0], width, height, 
+  /********** Texture Initilization **********/
+  auto f = [](int x, int y)
+      {
+        return std::make_tuple(0.0f, 0.0f,
+                               0.0f, 0.0f);
+      };
+
+  auto f1 = [this](int x, int y)
+      {
+        return std::make_tuple(10.0f, 0.0f,
+                               0.0f, 0.0f);
+      };
+
+  density[0] = createTexture2D(width, height);
+  density[1] = createTexture2D(width, height);
+  density[2] = createTexture2D(width, height);
+  density[3] = createTexture2D(width, height);
+  fillTextureWithFunctor(density[0], width, height, f);
+
+  temperature[0] = createTexture2D(width, height);
+  temperature[1] = createTexture2D(width, height);
+  temperature[2] = createTexture2D(width, height);
+  temperature[3] = createTexture2D(width, height);
+  fillTextureWithFunctor(temperature[0], width, height, f);
+
+  velocitiesTexture[0] = createTexture2D(width, height);
+  velocitiesTexture[1] = createTexture2D(width, height);
+  velocitiesTexture[2] = createTexture2D(width, height);
+  velocitiesTexture[3] = createTexture2D(width, height);
+  fillTextureWithFunctor(velocitiesTexture[0], width, height, f1);
+
+  divergenceTexture = createTexture2D(width, height);
+
+  vorticity = createTexture2D(width, height);
+
+  pressureTexture[0] = createTexture2D(width, height);
+  pressureTexture[1] = createTexture2D(width, height);
+
+  emptyTexture = createTexture2D(width, height);
+  fillTextureWithFunctor(emptyTexture, width, height,
       [](int x, int y)
       {
-        if(x % 100 < 50 && y % 100 < 50) return std::make_tuple(1.0f, 1.0f, 1.0f, 1.0f);  
-        else return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+        return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
       });
+}
 
-  velocitiesTexture[READ] = createTexture2D(width, height);
-  velocitiesTexture[WRITE] = createTexture2D(width, height);
-  auto f = [this](int x, int y)
-      {
-        return std::make_tuple(std::sin(2.0 * M_PI * (double) y / this->height), std::sin(2.0 * M_PI * (double) x / this->width), 0.0f, 0.0f);
-      };
-  fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
+void SimpleFluid::SetHandler(GLFWHandler* hand)
+{
+  handler = hand;
+}
 
-  copyProgram = compileAndLinkShader("shaders/simulation/copy.compute", GL_COMPUTE_SHADER);
+void SimpleFluid::AddSplat()
+{
+  addSplat = true;
+}
 
-  advectProgram = compileAndLinkShader("shaders/simulation/advect.compute", GL_COMPUTE_SHADER);
-
-  GLint location;
-  GL_CHECK( glUseProgram(advectProgram) );
-  location = glGetUniformLocation(advectProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-  location = glGetUniformLocation(advectProgram, "dt");
-  GL_CHECK( glUniform1f(location, 2.0f) );
+void SimpleFluid::RemoveSplat()
+{
+  addSplat = false;
 }
 
 void SimpleFluid::Update()
 {
-  GL_CHECK( glUseProgram(advectProgram) );
-  GL_CHECK( glBindImageTexture(0, dummyTexture[WRITE], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE1) );
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, dummyTexture[READ]) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE2) );
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocitiesTexture[READ]) );
-  GL_CHECK( glDispatchCompute(width, height, 1) );
+  GLint64 startTime, stopTime;
+  GLuint queryID[2];
 
-  std::swap(dummyTexture[0], dummyTexture[1]);
+  // generate two queries
+  glGenQueries(2, queryID);
+  glQueryCounter(queryID[0], GL_TIMESTAMP); 
 
-  GL_CHECK( glUseProgram(copyProgram) );
-  GL_CHECK( glBindImageTexture(0, shared_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
-  GL_CHECK( glBindImageTexture(1, dummyTexture[READ], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
-  GL_CHECK( glDispatchCompute(width, height, 1) );
+  /********** Adding Spot *********/
+  if(addSplat)
+  {
+    double sX, sY;
+    glfwGetCursorPos(handler->window, &sX, &sY);
+    sX = (double) width * sX / (double) handler->width;
+    sY = (double) width * (1.0 - sY / (double) handler->height);
+    printf("Adding splat at (%f, %f)\n", sX, sY);
+    sFact.addSmokeSpot(temperature[READ], density[READ], std::make_tuple(sX, sY));
+  }
+
+  /********** Vorticity **********/
+  sFact.computeVorticity(velocitiesTexture[READ], vorticity);
+  sFact.applyVorticity(velocitiesTexture[READ], vorticity, dt);
+
+  /********** Buoyant Force **********/
+  sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], dt, 0.5f, 0.5f, 15.0f);
+
+  /********** Convection **********/
+  sFact.simpleAdvect(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[1], dt);
+  sFact.simpleAdvect(velocitiesTexture[1], velocitiesTexture[1], velocitiesTexture[2], - dt);
+  sFact.maccormackStep(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[2], velocitiesTexture[1], velocitiesTexture[3], dt);
+
+  std::swap(velocitiesTexture[0], velocitiesTexture[3]);
+
+  /********** Divergence Computation **********/
+  sFact.divergence(velocitiesTexture[READ], divergenceTexture);
+
+  /********** Poisson Solving with Jacobi **********/
+  sFact.solvePressure(divergenceTexture, emptyTexture, pressureTexture[READ], dt);
+  for(int k = 0; k < 30; ++k)
+  {
+    sFact.solvePressure(divergenceTexture, pressureTexture[READ], pressureTexture[WRITE], dt);
+    std::swap(pressureTexture[READ], pressureTexture[WRITE]);
+  }
+
+  /********** Pressure Projection **********/
+  sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
+
+  std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
+
+  /********** Fields Advection **********/
+  sFact.simpleAdvect(velocitiesTexture[0], density[0], density[1], dt);
+  sFact.simpleAdvect(velocitiesTexture[1], density[1], density[2], - dt);
+  sFact.maccormackStep(velocitiesTexture[0], density[0], density[2], density[1], density[3], dt);
+
+  std::swap(density[0], density[3]);
+
+  sFact.simpleAdvect(velocitiesTexture[0], temperature[0], temperature[1], dt);
+  sFact.simpleAdvect(velocitiesTexture[1], temperature[1], temperature[2], - dt);
+  sFact.maccormackStep(velocitiesTexture[0], temperature[0], temperature[2], temperature[1], temperature[3], dt);
+
+  std::swap(temperature[0], temperature[3]);
+
+  /********** Copying to render texture **********/
+  shared_texture = density[READ];
+
+  glQueryCounter(queryID[1], GL_TIMESTAMP);
+  GLint stopTimerAvailable = 0;
+  while (!stopTimerAvailable) {
+      glGetQueryObjectiv(queryID[1],
+                            GL_QUERY_RESULT_AVAILABLE,
+                            &stopTimerAvailable);
+  }
+  // get query results
+  glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
+  glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
+  
+  printf("Copy: %f ms\n", (stopTime - startTime) / 1000000.0);
 }

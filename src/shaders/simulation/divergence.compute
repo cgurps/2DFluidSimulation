@@ -1,0 +1,23 @@
+#version 430
+layout(local_size_x = 32, local_size_y = 32) in;
+
+uniform ivec2 texSize;
+
+layout(rgba32f, binding = 0) uniform image2D divergence;
+layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / vec2(texSize);
+  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+
+  vec4 fieldL = texture2D(velocities_READ, texCoords - dx);
+  vec4 fieldR = texture2D(velocities_READ, texCoords + dx);
+  vec4 fieldB = texture2D(velocities_READ, texCoords - dy);
+  vec4 fieldT = texture2D(velocities_READ, texCoords + dy);
+
+  float div = 0.5f * (fieldR.x - fieldL.x + fieldT.y - fieldB.y);
+
+  imageStore(divergence, pixelCoords, vec4(div, 0.0f, 0.0f, 0.0f));
+}
