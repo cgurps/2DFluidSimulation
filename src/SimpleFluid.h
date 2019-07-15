@@ -6,33 +6,20 @@
 class SimpleFluid : public SimulationBase
 {
   public:
-    SimpleFluid(OpenCLWrapper* ocl)
-      : SimulationBase(ocl) {}
+    SimpleFluid(const int width, const int height)
+      : SimulationBase(width, height) {}
 
     void Init();
     void Update();
 
   private:
-    void UpdateSimulation();
-
     int READ = 0, WRITE = 1;
 
-    cl::Program program;
+    GLint copyProgram;
+    GLint advectProgram;
 
-    cl::Image2D velocitiesBuffer[2];
-    cl::Image2D pressureBuffer[2];
-    cl::Image2D fieldBuffer[2];
-
-    cl::Image2D emptyBuffer;
-
-    cl::Buffer divergenceBuffer;
-
-    cl::Buffer deltaTimeBuffer;
-
-    cl::Kernel advectKernel;
-    cl::Kernel divergenceKernel;
-    cl::Kernel jacobiKernel;
-    cl::Kernel pressureProjectionKernel;
+    GLuint velocitiesTexture[2];
+    GLuint dummyTexture[2];
 };
 
 #endif //SIMPLEFLUID_H

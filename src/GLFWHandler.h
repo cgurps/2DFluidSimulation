@@ -5,16 +5,6 @@
 
 #include "CLUtils.h"
 
-#include "glad.h"
-
-#ifdef __unix__
-#define GLFW_EXPOSE_NATIVE_X11
-#define GLFW_EXPOSE_NATIVE_GLX
-#endif
-
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-
 #include "GLUtils.h"
 
 class SimulationBase;

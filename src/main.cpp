@@ -1,19 +1,16 @@
 #include <iostream>
 
 #include "GLFWHandler.h"
-#include "OpenCLWrapper.h"
 #include "SimpleFluid.h"
 
 int main(int argc, char** argv)
 {
-    int windowWidth = 800, windowHeight = 600;
+    int windowWidth = 600, windowHeight = 600;
     int simWidth = 1024, simHeight = 1024;
 
     GLFWHandler handler(windowWidth, windowHeight);
 
-    OpenCLWrapper ocl(simWidth, simHeight, &handler);
-
-    SimpleFluid sFluid(&ocl);
+    SimpleFluid sFluid(simWidth, simHeight);
     sFluid.Init();
 
     handler.AttachSimulation(&sFluid);

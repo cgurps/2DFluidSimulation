@@ -1,272 +1,105 @@
 #include "SimpleFluid.h"
-#include "GLFWHandler.h"
+#include "GLUtils.h"
 
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <functional>
+#include <tuple>
 
-cl::Image2D create2DImage(OpenCLWrapper *ocl)
+void fillTextureWithFunctor(GLuint tex, 
+    const int width, 
+    const int height, 
+    std::function<std::tuple<float, float, float, float>(int, int)> f)
 {
-  try
-  {
-    cl::Image2D image = cl::Image2D(ocl->context,
-        CL_MEM_READ_WRITE,
-        cl::ImageFormat(CL_RGBA, CL_FLOAT),
-        ocl->width, ocl->height);
+  float *data = new float[4 * width * height];
 
-    cl_float4 emp; emp.x = 0.0f; emp.y = 0.0f; emp.z = 0.0f; emp.w = 0.0f;
-    cl::array<cl::size_type, 3> origin = {0, 0, 0};
-    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
-    ocl->command_queue.enqueueFillImage(image, emp, origin, region);
-
-    return image;
-  }
-  catch(cl::Error& e)
+  for(int x = 0; x < width; ++x)
   {
-    throw e;
-  }
-}
-
-void writeChestToImage(OpenCLWrapper *ocl, cl::Image2D *image)
-{
-  try
-  {
-    std::vector<float> pixels(4 * ocl->width * ocl->height);
-    for(int y = 0; y < ocl->height; ++y)
+    for(int y = 0; y < height; ++y)
     {
-      for(int x = 0; x < ocl->width; ++x)
-      {
-        if(x % 50 > 25 && y % 50 > 25)
-        {
-          pixels[4 * (y * ocl->width + x)] = 1.0f;
-          pixels[4 * (y * ocl->width + x) + 1] = 1.0f;
-          pixels[4 * (y * ocl->width + x) + 2] = 1.0f;
-        }
-        else
-        {
-          pixels[4 * (y * ocl->width + x)] = 0.0f;
-          pixels[4 * (y * ocl->width + x) + 1] = 0.0f;
-          pixels[4 * (y * ocl->width + x) + 2] = 0.0f;
-        }
-        pixels[4 * (y * ocl->width + x) + 3] = 1.0f;
-      }
+      const int pos = 4 * (y * width + x);
+
+      auto [r, g, b, a] = f(x, y);
+
+      data[pos    ] = r;
+      data[pos + 1] = g;
+      data[pos + 2] = g;
+      data[pos + 3] = a;
     }
+  }
 
-    cl::array<cl::size_type, 3> origin = {0, 0, 0};
-    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
-    ocl->command_queue.enqueueWriteImage(*image, CL_TRUE, origin, region, 0, 0, pixels.data());
-  }
-  catch(cl::Error& e)
-  {
-    throw e;
-  }
-}
+  GL_CHECK( glBindTexture(GL_TEXTURE_2D, tex) );
+  GL_CHECK( glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, data) );
 
-void writeVelocities(OpenCLWrapper *ocl, cl::Image2D *image)
-{
-  try
-  {
-    std::vector<float> pixels(4 * ocl->width * ocl->height, 0.0f);
-    /*
-    for(int y = 0; y < ocl->height; ++y)
-    {
-      for(int x = 0; x < ocl->width; ++x)
-      {
-        pixels[4 * (y * ocl->width + x)    ] = std::sin(2.0 * M_PI * (double) y / (double) ocl->height);
-        pixels[4 * (y * ocl->width + x) + 1] = std::sin(2.0 * M_PI * (double) x / (double) ocl->width);
-        pixels[4 * (y * ocl->width + x) + 2] = 0.0f;
-        pixels[4 * (y * ocl->width + x) + 3] = 1.0f;
-
-        //std::cout << x << " " << y << " " << pixels[4 * (y * ocl->width + x)] << " " << pixels[4 * (y * ocl->width + x) + 1] << std::endl;
-      }
-    }
-    */
-
-    cl::array<cl::size_type, 3> origin = {0, 0, 0};
-    cl::array<cl::size_type, 3> region = {(unsigned long) ocl->width, (unsigned long) ocl->height, 1};
-    ocl->command_queue.enqueueWriteImage(*image, CL_TRUE, origin, region, 0, 0, pixels.data());
-  }
-  catch(cl::Error& e)
-  {
-    throw e;
-  }
-}
-
-template<typename T>
-cl::Buffer createBuffer(OpenCLWrapper *ocl, const size_t size, const T value)
-{
-  try
-  {
-    std::vector<T> dummy(size, value);
-    return cl::Buffer(ocl->context,
-        dummy.begin(), dummy.end(), false);
-  }
-  catch(cl::Error& e)
-  {
-    throw e;
-  }
+  delete [] data;
 }
 
 void SimpleFluid::Init()
 {
-  std::ifstream file("kernels/fluid.cs");
-  std::ostringstream file_buffer;
-  file_buffer << file.rdbuf();
+  GLint work_grp_cnt[3];
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]) );
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_grp_cnt[1]) );
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]) );
 
-  try
-  {
-    //Loading Program
-    program = cl::Program(ocl->context, file_buffer.str());
-    program.build({ocl->device});
+  GLint work_grp_size[3];
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &work_grp_size[0]) );
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &work_grp_size[1]) );
+  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &work_grp_size[2]) );
 
-    std::cout << "Successfully built the OpenCL kernels" << std::endl;
+  GLint work_grp_inv;
+  GL_CHECK( glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv) );
+ 
+  printf("Max global (total) work group size x:%i y:%i z:%i\n",
+    work_grp_cnt[0], work_grp_cnt[1], work_grp_cnt[2]);
+  printf("Max local (in one shader) work group sizes x:%i y:%i z:%i\n",
+    work_grp_size[0], work_grp_size[1], work_grp_size[2]);
+  printf("Max local work group invocations %i\n", work_grp_inv);
 
-    //Generating Buffers and Images
-    velocitiesBuffer[READ] = create2DImage(ocl);
-    velocitiesBuffer[WRITE] = create2DImage(ocl);
-    writeVelocities(ocl, velocitiesBuffer);
-
-    pressureBuffer[READ] = create2DImage(ocl);
-    pressureBuffer[WRITE] = create2DImage(ocl);
-
-    fieldBuffer[READ] = create2DImage(ocl);
-    fieldBuffer[WRITE] = create2DImage(ocl);
-    writeChestToImage(ocl, fieldBuffer);
-
-    emptyBuffer = create2DImage(ocl);
-
-    divergenceBuffer = createBuffer(ocl, ocl->width * ocl->height, 0.0f);
-
-    deltaTimeBuffer = createBuffer(ocl, 1, 0.1f);
-
-    std::cout << "Buffers Initialized" << std::endl;
-
-    //Preparing Kernels
-    advectKernel = cl::Kernel(program, "advect");
-    divergenceKernel = cl::Kernel(program, "divergence");
-    jacobiKernel = cl::Kernel(program, "jacobi");
-    pressureProjectionKernel = cl::Kernel(program, "pressureProjection");
-  }
-  catch (cl::Error& e)
-  {
-    if (e.err() == CL_BUILD_PROGRAM_FAILURE)
-    {
-      for (cl::Device dev : {ocl->device})
+  dummyTexture[READ] = createTexture2D(width, height);
+  dummyTexture[WRITE] = createTexture2D(width, height);
+  fillTextureWithFunctor(dummyTexture[0], width, height, 
+      [](int x, int y)
       {
-        // Check the build status
-        cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(dev);
-        if (status != CL_BUILD_ERROR)
-          continue;
+        if(x % 100 < 50 && y % 100 < 50) return std::make_tuple(1.0f, 1.0f, 1.0f, 1.0f);  
+        else return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+      });
 
-        // Get the build log
-        std::string name     = dev.getInfo<CL_DEVICE_NAME>();
-        std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(dev);
-        std::cerr << "Build log for " << name << ":" << std::endl
-                  << buildlog << std::endl;
-      }
-    }
-    else
-    {
-      throw cl_ok(e.err());
-    }
-  }
+  velocitiesTexture[READ] = createTexture2D(width, height);
+  velocitiesTexture[WRITE] = createTexture2D(width, height);
+  auto f = [this](int x, int y)
+      {
+        return std::make_tuple(std::sin(2.0 * M_PI * (double) y / this->height), std::sin(2.0 * M_PI * (double) x / this->width), 0.0f, 0.0f);
+      };
+  fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
+
+  copyProgram = compileAndLinkShader("shaders/simulation/copy.compute", GL_COMPUTE_SHADER);
+
+  advectProgram = compileAndLinkShader("shaders/simulation/advect.compute", GL_COMPUTE_SHADER);
+
+  GLint location;
+  GL_CHECK( glUseProgram(advectProgram) );
+  location = glGetUniformLocation(advectProgram, "texSize");
+  GL_CHECK( glUniform2i(location, width, height) );
+  location = glGetUniformLocation(advectProgram, "dt");
+  GL_CHECK( glUniform1f(location, 2.0f) );
 }
 
 void SimpleFluid::Update()
 {
-  auto f = [](const unsigned a, const unsigned b) -> unsigned
-  {
-    return (a + b - 1) / b;
-  };
+  GL_CHECK( glUseProgram(advectProgram) );
+  GL_CHECK( glBindImageTexture(0, dummyTexture[WRITE], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE1) );
+  GL_CHECK( glBindTexture(GL_TEXTURE_2D, dummyTexture[READ]) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE2) );
+  GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocitiesTexture[READ]) );
+  GL_CHECK( glDispatchCompute(width, height, 1) );
 
-  try
-  {
-    cl::Event event;
+  std::swap(dummyTexture[0], dummyTexture[1]);
 
-    cl::NDRange local(16, 16);
-    cl::NDRange global(local[0] * f(ocl->width , local[0]),
-                       local[1] * f(ocl->height, local[1]));
-
-    /********** ADVECTION KERNEL **********/
-    advectKernel.setArg(0, velocitiesBuffer[READ]);
-    advectKernel.setArg(1, velocitiesBuffer[READ]);
-    advectKernel.setArg(2, velocitiesBuffer[WRITE]);
-    advectKernel.setArg(3, deltaTimeBuffer);
-
-    ocl->command_queue.enqueueNDRangeKernel(advectKernel, cl::NullRange, global, local);
-    ocl->command_queue.finish();
-
-    std::swap(velocitiesBuffer[READ], velocitiesBuffer[WRITE]);
-
-    /********** DIVERGENCE KERNEL **********/
-    divergenceKernel.setArg(0, velocitiesBuffer[READ]);
-    divergenceKernel.setArg(1, divergenceBuffer);
-    divergenceKernel.setArg(2, deltaTimeBuffer);
-
-    ocl->command_queue.enqueueNDRangeKernel(divergenceKernel, cl::NullRange, global, local);
-    ocl->command_queue.finish();
-
-    /********** JACOBI KERNEL **********/
-    jacobiKernel.setArg(0, divergenceBuffer);
-    jacobiKernel.setArg(3, deltaTimeBuffer);
-
-    //Initialization
-    jacobiKernel.setArg(1, emptyBuffer);
-    jacobiKernel.setArg(2, pressureBuffer[READ]);
-
-    ocl->command_queue.enqueueNDRangeKernel(jacobiKernel, cl::NullRange, global, local);
-    ocl->command_queue.finish();
-
-    //Solving
-    for(int k = 0; k < 25; ++k)
-    {
-      jacobiKernel.setArg(1, pressureBuffer[READ]);
-      jacobiKernel.setArg(2, pressureBuffer[WRITE]);
-
-      ocl->command_queue.enqueueNDRangeKernel(jacobiKernel, cl::NullRange, global, local);
-      ocl->command_queue.finish();
-
-      std::swap(pressureBuffer[READ], pressureBuffer[WRITE]);
-    }
-
-    /********** PRESSURE PROJECTION **********/
-    pressureProjectionKernel.setArg(0, pressureBuffer[READ]);
-    pressureProjectionKernel.setArg(1, velocitiesBuffer[READ]);
-    pressureProjectionKernel.setArg(2, velocitiesBuffer[WRITE]);
-    pressureProjectionKernel.setArg(3, deltaTimeBuffer);
-
-    ocl->command_queue.enqueueNDRangeKernel(pressureProjectionKernel, cl::NullRange, global, local);
-    ocl->command_queue.finish();
-    
-    std::swap(velocitiesBuffer[READ], velocitiesBuffer[WRITE]);
-
-    /********** FIELD ADVECTION KERNEL **********/
-    advectKernel.setArg(0, velocitiesBuffer[READ]);
-    advectKernel.setArg(1, fieldBuffer[READ]);
-    advectKernel.setArg(2, fieldBuffer[WRITE]);
-    advectKernel.setArg(3, deltaTimeBuffer);
-
-    ocl->command_queue.enqueueNDRangeKernel(advectKernel, cl::NullRange, global, local);
-    ocl->command_queue.finish();
-
-    std::swap(fieldBuffer[READ], fieldBuffer[WRITE]);
-
-    std::vector<cl::Memory> objects(1, imageGL); glFinish();
-    ocl->command_queue.enqueueAcquireGLObjects(&objects, NULL, &event); event.wait();
-    ocl->command_queue.enqueueCopyImage(fieldBuffer[READ], imageGL, 
-        {0, 0, 0}, {0, 0, 0}, {(unsigned long) ocl->width, (unsigned long)ocl->height, 1});
-    ocl->command_queue.finish();
-    ocl->command_queue.enqueueReleaseGLObjects(&objects, NULL, &event); event.wait();
-    ocl->command_queue.finish();
-  }
-  catch(cl::Error& e)
-  {
-    cl_ok(e.err());
-  }
-}
-
-void SimpleFluid::UpdateSimulation()
-{
-
+  GL_CHECK( glUseProgram(copyProgram) );
+  GL_CHECK( glBindImageTexture(0, shared_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(1, dummyTexture[READ], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glDispatchCompute(width, height, 1) );
 }

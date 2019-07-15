@@ -1,0 +1,13 @@
+#version 430
+layout(local_size_x = 4, local_size_y = 4) in;
+
+layout(rgba32f, binding = 0) uniform image2D tex_WRITE;
+layout(rgba32f, binding = 1) uniform image2D tex_READ;
+
+void main()
+{
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec4 pixel = imageLoad(tex_READ, pixelCoords);
+
+  imageStore(tex_WRITE, pixelCoords, pixel);
+}
