@@ -125,22 +125,17 @@ void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint fie
 void SimulationFactory::divergence(const GLuint velocities, const GLuint divergence_WRITE)
 {
   GL_CHECK( glUseProgram(divergenceProgram) );
-  GL_CHECK( glBindImageTexture(0, divergence_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, divergence_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
-void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint pressure_READ, const GLuint pressure_WRITE, const float dt)
+void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint pressure_READ, const GLuint pressure_WRITE)
 {
   GL_CHECK( glUseProgram(jacobiProgram) );
 
-  GLuint location = glGetUniformLocation(jacobiProgram, "alpha");
-  GL_CHECK( glUniform1f(location, 1.0f / dt) );
-  location = glGetUniformLocation(jacobiProgram, "beta");
-  GL_CHECK( glUniform1f(location, 1.0f / (4.0f + 1.0f / dt)) );
-
-  GL_CHECK( glBindImageTexture(0, pressure_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, pressure_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, pressure_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, divergence_READ) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
@@ -199,17 +194,21 @@ void SimulationFactory::applyBuoyantForce(const GLuint velocities_READ_WRITE, co
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
-void SimulationFactory::addSmokeSpot(const GLuint temperature, const GLuint density, const std::tuple<int, int> pos)
+void SimulationFactory::addSplat(const GLuint field, const std::tuple<int, int> pos, const std::tuple<float, float, float> color, const float intensity)
 {
   auto [x, y] = pos;
+  auto [r, g, b] = color;
 
   GL_CHECK( glUseProgram(addSmokeSpotProgram) );
 
   GLuint location = glGetUniformLocation(addSmokeSpotProgram, "spotPos");
   GL_CHECK( glUniform2i(location, x, y) );
+  location = glGetUniformLocation(addSmokeSpotProgram, "color");
+  GL_CHECK( glUniform3f(location, r, g, b) );
+  location = glGetUniformLocation(addSmokeSpotProgram, "intensity");
+  GL_CHECK( glUniform1f(location, intensity) );
 
-  GL_CHECK( glBindImageTexture(0, density, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
-  GL_CHECK( glBindImageTexture(1, temperature, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, field, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }

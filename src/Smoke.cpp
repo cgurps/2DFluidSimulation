@@ -1,4 +1,4 @@
-#include "SimpleFluid.h"
+#include "Smoke.h"
 #include "GLUtils.h"
 
 #include <string>
@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cmath>
 
-void SimpleFluid::Init()
+void Smoke::Init()
 {
   GLint work_grp_cnt[3];
   GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]) );
@@ -40,16 +40,10 @@ void SimpleFluid::Init()
         float xf = (float) x - 0.5f * (float) this->width;
         float yf = (float) y - 0.5f * (float) this->height;
         float norm = std::sqrt(xf * xf + yf * yf);
-        float vx = (y > 512) ? 10.0f : 1.0f;
-        float vy = (norm < 1e-5) ? 0.0f :   20.0f * xf / norm;
-        return std::make_tuple(vx, 0.0f,
+        float vx = (norm < 1e-5) ? 0.0f : - 200.0f * yf / norm;
+        float vy = (norm < 1e-5) ? 0.0f :   200.0f * xf / norm;
+        return std::make_tuple(50.0f, 0.0f,
                                0.0f, 0.0f);
-      };
-
-  auto f3 = [](int x, int y)
-      {
-        if(y > 512) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
-        else return std::make_tuple(1.0f, 1.0f, 1.0f, 0.0f);
       };
 
   density[0] = createTexture2D(width, height);
@@ -57,6 +51,12 @@ void SimpleFluid::Init()
   density[2] = createTexture2D(width, height);
   density[3] = createTexture2D(width, height);
   fillTextureWithFunctor(density[0], width, height, f);
+
+  temperature[0] = createTexture2D(width, height);
+  temperature[1] = createTexture2D(width, height);
+  temperature[2] = createTexture2D(width, height);
+  temperature[3] = createTexture2D(width, height);
+  fillTextureWithFunctor(temperature[0], width, height, f);
 
   velocitiesTexture[0] = createTexture2D(width, height);
   velocitiesTexture[1] = createTexture2D(width, height);
@@ -82,36 +82,24 @@ void SimpleFluid::Init()
       });
 }
 
-void SimpleFluid::SetHandler(GLFWHandler* hand)
+void Smoke::SetHandler(GLFWHandler* hand)
 {
   handler = hand;
 }
 
-void SimpleFluid::AddSplat()
+void Smoke::AddSplat()
 {
-  glfwGetCursorPos(handler->window, &sOriginX, &sOriginY);
-  sOriginX = (double) width * sOriginX / (double) handler->width;
-  sOriginY = (double) width * (1.0 - sOriginY / (double) handler->height);
-
-  addSplat = true;
 }
 
-void SimpleFluid::AddMultipleSplat(const int nb)
+void Smoke::AddMultipleSplat(const int nb)
 {
-  nbSplat = nb;
 }
 
-void SimpleFluid::RemoveSplat()
+void Smoke::RemoveSplat()
 {
-  addSplat = false;
 }
 
-float rd()
-{
-  return (float) rand() / (float) RAND_MAX; 
-}
-
-void SimpleFluid::Update()
+void Smoke::Update()
 {
   GLint64 startTime, stopTime;
   GLuint queryID[2];
@@ -121,34 +109,31 @@ void SimpleFluid::Update()
   glQueryCounter(queryID[0], GL_TIMESTAMP); 
 
   /********** Adding Splat *********/
-  while(nbSplat > 0)
+  auto rd = []() -> double
   {
-    int x = std::clamp(static_cast<int>(width * rd()), 50, width - 50);
-    int y = std::clamp(static_cast<int>(height * rd()), 50, height - 50);
-    sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(100.0f * rd() - 50.0f, 100.0f * rd() - 50.0f, 0.0f), 75.0f);
-    sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 8.0f);
+    return (double) rand() / (double) RAND_MAX;
+  };
 
-    --nbSplat;
-  }
+  int x = width / 2;
+  int y = 75;
+  float d = rd();
+  /*
+  sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.0f, 0.41f, 0.55f), 0.1f);
+  sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 2.0f);
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 75.0f);
+  */
 
-  if(addSplat)
-  {
-    float vScale = 1.0f;
-    double sX, sY;
-    glfwGetCursorPos(handler->window, &sX, &sY);
-    sX = (double) width * sX / (double) handler->width;
-    sY = (double) width * (1.0 - sY / (double) handler->height);
-    sFact.addSplat(velocitiesTexture[READ], std::make_tuple(sX, sY), std::make_tuple(vScale * (sX - sOriginX), vScale * (sY - sOriginY), 0.0f), 40.0f);
-    sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 5.0f);
-
-    sOriginX = sX;
-    sOriginY = sY;
-  }
+  sFact.addSplat(density[READ],           std::make_tuple(x, 450), std::make_tuple(0.0f, 0.41f, 0.55f), 0.1f);
+  sFact.addSplat(temperature[READ],       std::make_tuple(x, 450), std::make_tuple(rd() * 5.0f - 10.0f, 0.0f, 0.0f), 2.0f);
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, 450), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 15.0f);
 
   /********** Vorticity **********/
   sFact.copy(emptyTexture, vorticity);
   sFact.computeVorticity(velocitiesTexture[READ], vorticity);
   sFact.applyVorticity(velocitiesTexture[READ], vorticity, dt);
+
+  /********** Buoyant Force **********/
+  sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], dt, 0.25f, 0.1f, 15.0f);
 
   /********** Convection **********/
   sFact.simpleAdvect(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[1],   dt);
@@ -163,7 +148,7 @@ void SimpleFluid::Update()
 
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
-  for(int k = 0; k < 30; ++k)
+  for(int k = 0; k < 25; ++k)
   {
     sFact.solvePressure(divergenceTexture, pressureTexture[READ], pressureTexture[WRITE]);
     std::swap(pressureTexture[READ], pressureTexture[WRITE]);
@@ -181,6 +166,12 @@ void SimpleFluid::Update()
 
   std::swap(density[0], density[3]);
 
+  sFact.simpleAdvect(velocitiesTexture[0], temperature[0], temperature[1], dt);
+  sFact.simpleAdvect(velocitiesTexture[1], temperature[1], temperature[2], - dt);
+  sFact.maccormackStep(velocitiesTexture[0], temperature[0], temperature[2], temperature[1], temperature[3], dt);
+
+  std::swap(temperature[0], temperature[3]);
+
   /********** Copying to render texture **********/
   shared_texture = density[READ];
 
@@ -195,6 +186,6 @@ void SimpleFluid::Update()
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
-  printf("\r%.3fms", (stopTime - startTime) / 1000000.0);
+  printf("\rCopy: %f ms", (stopTime - startTime) / 1000000.0);
   fflush(stdout);
 }

@@ -93,12 +93,22 @@ static void mouseCallBack(GLFWwindow* window, int button, int action, int mods)
   }
 }
 
+static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+  if(key == GLFW_KEY_E && action == GLFW_PRESS)
+  {
+    GLFWHandler *handler = (GLFWHandler*) glfwGetWindowUserPointer(window);
+    handler->simulation->AddMultipleSplat(100);
+  }
+}
+
 /*************************************/
 
 void GLFWHandler::RegisterEvent()
 {
   glfwSetWindowUserPointer(window, this);  
   glfwSetMouseButtonCallback(window, mouseCallBack);
+  glfwSetKeyCallback(window, keyCallBack);
 }
 
 void GLFWHandler::Run()

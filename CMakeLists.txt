@@ -6,32 +6,21 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 SET(OpenGL_GL_PREFERENCE "GLVND")
 FIND_PACKAGE( OpenGL REQUIRED )
 
-FIND_PACKAGE(OpenCL REQUIRED)
-
 FIND_PACKAGE(glfw3 3.3 REQUIRED)
-
-#IF(UNIX AND NOT APPLE)
-#  FIND_PACKAGE(OpenMP REQUIRED)
-#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-#ENDIF()
 
 ADD_EXECUTABLE(
     sim
     src/main.cpp
     src/GLFWHandler.cpp
     src/glad.c
-    src/CLUtils.cpp
-    src/OpenCLWrapper.cpp
     src/SimpleFluid.cpp
     src/GLUtils.cpp
     src/SimulationFactory.cpp
+    src/Smoke.cpp
 )
 
 TARGET_LINK_LIBRARIES(sim
     glfw
-    OpenCL::OpenCL
     OpenGL::GL
     ${CMAKE_DL_LIBS}
     )

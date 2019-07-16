@@ -7,25 +7,45 @@ uniform float dt;
 layout(rgba32f, binding = 0) uniform image2D velocities_READ_WRITE;
 layout(rgba32f, binding = 1) uniform sampler2D vorticity;
 
+//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
+{
+  vec2 textureSize = vec2(texSize);
+  vec2 texelSize = vec2(1.0f / texSize.x, 1.0f / texSize.y);
+
+  vec2 f = fract( uv * textureSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 tl = texture2D(t, uv);
+  vec4 tr = texture2D(t, uv + vec2(texelSize.x + 1e-5, 0.0));
+  vec4 bl = texture2D(t, uv + vec2(0.0, texelSize.y + 1e-5));
+  vec4 br = texture2D(t, uv + vec2(texelSize.x, texelSize.y + 1e-5));
+  vec4 tA = mix( tl, tr, f.x );
+  vec4 tB = mix( bl, br, f.x );
+  return mix( tA, tB, f.y );
+}
+
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / vec2(texSize);
-  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
 
-  float vC = texture2D(vorticity, texCoords).x;
-  float vL = texture2D(vorticity, texCoords - dx).x;
-  float vR = texture2D(vorticity, texCoords + dx).x;
-  float vB = texture2D(vorticity, texCoords - dy).x;
-  float vT = texture2D(vorticity, texCoords + dy).x;
+  float vC = texelFetch(vorticity, pixelCoords, 0).x;
+  float vL = texelFetchOffset(vorticity, pixelCoords, 0, - dx).x;
+  float vR = texelFetchOffset(vorticity, pixelCoords, 0,   dx).x;
+  float vB = texelFetchOffset(vorticity, pixelCoords, 0, - dy).x;
+  float vT = texelFetchOffset(vorticity, pixelCoords, 0,   dy).x;
+
+  if(pixelCoords.x - dx.x < 0) vL = vC;
+  if(pixelCoords.x + dx.x >= texSize.x) vR = vC;
+  if(pixelCoords.y - dx.y < 0) vB = vC;
+  if(pixelCoords.y + dx.y >= texSize.x) vT = vC;
 
   vec2 force = 0.5f * vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
 
-  const float EPSILON = 2.4414e-4f;
-  float magSqr = max(EPSILON, dot(force, force));
-  force = force * sqrt(magSqr);
+  force /= (1e-20 + length(force));
 
-  force *= vC * vec2(1.0f, -1.0f);
+  force *= 5.0f * vC * vec2(1.0f, -1.0f);
 
   imageStore(velocities_READ_WRITE, pixelCoords, imageLoad(velocities_READ_WRITE, pixelCoords) + dt * vec4(force, 0.0f, 0.0f));
 }

@@ -7,20 +7,38 @@ layout(rgba32f, binding = 0) uniform image2D velocities_WRITE;
 layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
 layout(rgba32f, binding = 2) uniform sampler2D pressure_READ;
 
+//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
+{
+  vec2 textureSize = vec2(texSize);
+  vec2 texelSize = vec2(1.0f / texSize.x, 1.0f / texSize.y);
+
+  vec2 f = fract( uv * textureSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 tl = texture2D(t, uv);
+  vec4 tr = texture2D(t, uv + vec2(texelSize.x + 1e-5, 0.0));
+  vec4 bl = texture2D(t, uv + vec2(0.0, texelSize.y + 1e-5));
+  vec4 br = texture2D(t, uv + vec2(texelSize.x, texelSize.y + 1e-5));
+  vec4 tA = mix( tl, tr, f.x );
+  vec4 tB = mix( bl, br, f.x );
+  return mix( tA, tB, f.y );
+}
+
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / vec2(texSize);
-  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+  vec2 texCoords = vec2(pixelCoords) / vec2(texSize);
+  vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
+  vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
 
-  float pL = texture2D(pressure_READ, texCoords - dx).x;
-  float pR = texture2D(pressure_READ, texCoords + dx).x;
-  float pB = texture2D(pressure_READ, texCoords - dy).x;
-  float pT = texture2D(pressure_READ, texCoords + dy).x;
+  float pL = texture2D_bilinear(pressure_READ, texCoords - dx).x;
+  float pR = texture2D_bilinear(pressure_READ, texCoords + dx).x;
+  float pB = texture2D_bilinear(pressure_READ, texCoords - dy).x;
+  float pT = texture2D_bilinear(pressure_READ, texCoords + dy).x;
 
   vec2 gradP = 0.5f * vec2(pR - pL, pT - pB);
 
-  vec2 oldVel = texture2D(velocities_READ, texCoords).xy;
+  vec2 oldVel = texelFetch(velocities_READ, pixelCoords, 0).xy;
 
   imageStore(velocities_WRITE, pixelCoords, vec4(oldVel - gradP, 0.0f, 0.0f));
 }

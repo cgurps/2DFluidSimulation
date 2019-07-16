@@ -14,13 +14,11 @@ layout(rgba32f, binding = 2) uniform sampler2D density;
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / vec2(texSize);
-  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
 
-  float t = texture2D(temperature, texCoords).x;
-  float d = texture2D(density, texCoords).x;
+  float t = texelFetch(temperature, pixelCoords, 0).x;
+  float d = texelFetch(density, pixelCoords, 0).x;
 
-  vec2 force = (- kappa * d + sigma * (t - t0)) * vec2(0.0f, - 1.0f);
+  vec2 force = (- kappa * d + sigma * (t - t0)) * vec2(0.0f, 1.0f);
   vec4 oldVel = imageLoad(velocities_READ_WRITE, pixelCoords);
 
   imageStore(velocities_READ_WRITE, pixelCoords, oldVel + dt * vec4(force, 0.0f, 0.0f));

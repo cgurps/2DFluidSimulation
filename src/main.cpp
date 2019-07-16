@@ -2,22 +2,29 @@
 
 #include "GLFWHandler.h"
 #include "SimpleFluid.h"
+#include "Smoke.h"
 
 int main(int argc, char** argv)
 {
-    int windowWidth = 600, windowHeight = 600;
-    int simWidth = 1024, simHeight = 1024;
-    float dt = 0.05f;
+  srand(time(NULL));
 
-    GLFWHandler handler(windowWidth, windowHeight);
+  int windowWidth = 1000, windowHeight = 1000;
+  int simWidth = 1024, simHeight = 1024;
+  float dt = 0.1f;
 
-    SimpleFluid sFluid(simWidth, simHeight, dt);
-    sFluid.Init();
-    sFluid.SetHandler(&handler);
+  GLFWHandler handler(windowWidth, windowHeight);
 
-    handler.AttachSimulation(&sFluid);
-    handler.RegisterEvent();
-    handler.Run();
+  SimpleFluid sFluid(simWidth, simHeight, dt);
+  sFluid.Init();
+  sFluid.SetHandler(&handler);
 
-    return 0;
+  Smoke smoke(simWidth, simHeight, dt);
+  smoke.Init();
+  smoke.SetHandler(&handler);
+
+  handler.AttachSimulation(&sFluid);
+  handler.RegisterEvent();
+  handler.Run();
+
+  return 0;
 }

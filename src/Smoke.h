@@ -1,21 +1,20 @@
-#ifndef SIMPLEFLUID_H
-#define SIMPLEFLUID_H
+#ifndef SMOKE_H
+#define SMOKE_H
 
 #include "SimulationBase.h"
 #include "SimulationFactory.h"
 #include "GLFWHandler.h"
 
-class SimpleFluid : public SimulationBase
+class Smoke : public SimulationBase
 {
   public:
-    SimpleFluid(const int width, const int height, const float dt)
+    Smoke(const int width, const int height, const float dt)
       : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
 
     void Init() override;
     void Update() override;
 
     void SetHandler(GLFWHandler* hand);
-
     void AddSplat() override;
     void AddMultipleSplat(const int nb) override;
     void RemoveSplat() override;
@@ -24,12 +23,9 @@ class SimpleFluid : public SimulationBase
 
     SimulationFactory sFact;
 
-    bool addSplat = false;
-    double sOriginX, sOriginY;
-    int nbSplat = 0;
-
     GLuint velocitiesTexture[4];
     GLuint density[4];
+    GLuint temperature[4];
     GLuint divergenceTexture;
     GLuint pressureTexture[2];
     GLuint vorticity;
@@ -38,4 +34,4 @@ class SimpleFluid : public SimulationBase
     GLFWHandler* handler;
 };
 
-#endif //SIMPLEFLUID_H
+#endif //SMOKE_H

@@ -2,25 +2,45 @@
 layout(local_size_x = 32, local_size_y = 32) in;
 
 uniform ivec2 texSize;
-uniform float alpha;
-uniform float beta;
 
 layout(rgba32f, binding = 0) uniform image2D pressure_WRITE;
 layout(rgba32f, binding = 1) uniform sampler2D pressure_READ;
 layout(rgba32f, binding = 2) uniform sampler2D divergence;
 
+//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
+{
+  vec2 textureSize = vec2(texSize);
+  vec2 texelSize = vec2(1.0f / texSize.x, 1.0f / texSize.y);
+
+  vec2 f = fract( uv * textureSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 tl = texture2D(t, uv);
+  vec4 tr = texture2D(t, uv + vec2(texelSize.x + 1e-5, 0.0));
+  vec4 bl = texture2D(t, uv + vec2(0.0, texelSize.y + 1e-5));
+  vec4 br = texture2D(t, uv + vec2(texelSize.x, texelSize.y + 1e-5));
+  vec4 tA = mix( tl, tr, f.x );
+  vec4 tB = mix( bl, br, f.x );
+  return mix( tA, tB, f.y );
+}
+
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / vec2(texSize);
-  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
 
-  vec4 dC = texture2D(divergence, texCoords);
+  float dC = texelFetch(divergence, pixelCoords, 0).x;
+  float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
+  float pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x;
+  float pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x;
+  float pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x;
+  float pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x;
 
-  vec4 pL = texture2D(pressure_READ, texCoords - dx);
-  vec4 pR = texture2D(pressure_READ, texCoords + dx);
-  vec4 pB = texture2D(pressure_READ, texCoords - dy);
-  vec4 pT = texture2D(pressure_READ, texCoords + dy);
+  if(pixelCoords.x - dx.x < 0) pL = pC;
+  if(pixelCoords.x + dx.x >= texSize.x) pR = pC;
+  if(pixelCoords.y - dx.y < 0) pB = pC;
+  if(pixelCoords.y + dx.y >= texSize.x) pT = pC;
 
-  imageStore(pressure_WRITE, pixelCoords, (pL + pR + pB + pT + alpha * dC) * beta);
+  imageStore(pressure_WRITE, pixelCoords, vec4(0.25f * (pL + pR + pB + pT - dC), 0.0f, 0.0f, 1.0f));
 }

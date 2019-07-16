@@ -1,4 +1,4 @@
-#version 430
+#version 450
 layout(local_size_x = 32, local_size_y = 32) in;
 
 uniform ivec2 texSize;
@@ -6,16 +6,39 @@ uniform ivec2 texSize;
 layout(rgba32f, binding = 0) uniform image2D vorticity;
 layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
 
+//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
+{
+  vec2 textureSize = vec2(texSize);
+  vec2 texelSize = vec2(1.0f / texSize.x, 1.0f / texSize.y);
+
+  vec2 f = fract( uv * textureSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 tl = texture2D(t, uv);
+  vec4 tr = texture2D(t, uv + vec2(texelSize.x + 1e-5, 0.0));
+  vec4 bl = texture2D(t, uv + vec2(0.0, texelSize.y + 1e-5));
+  vec4 br = texture2D(t, uv + vec2(texelSize.x, texelSize.y + 1e-5));
+  vec4 tA = mix( tl, tr, f.x );
+  vec4 tB = mix( bl, br, f.x );
+  return mix( tA, tB, f.y );
+}
+
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / vec2(texSize);
-  vec2 dx = vec2(1.0f, 0.0f); vec2 dy = vec2(0.0f, 1.0f);
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
 
-  vec4 fieldL = texture2D(velocities_READ, texCoords - dx);
-  vec4 fieldR = texture2D(velocities_READ, texCoords + dx);
-  vec4 fieldB = texture2D(velocities_READ, texCoords - dy);
-  vec4 fieldT = texture2D(velocities_READ, texCoords + dy);
+  vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
+  vec2 fieldL = texelFetchOffset(velocities_READ, pixelCoords, 0, - dx).xy;
+  vec2 fieldR = texelFetchOffset(velocities_READ, pixelCoords, 0,   dx).xy;
+  vec2 fieldB = texelFetchOffset(velocities_READ, pixelCoords, 0, - dy).xy;
+  vec2 fieldT = texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).xy;
+
+  if(pixelCoords.x - dx.x < 0) fieldL = fieldC;
+  if(pixelCoords.x + dx.x >= texSize.x) fieldR = fieldC;
+  if(pixelCoords.y - dx.y < 0) fieldB = fieldC;
+  if(pixelCoords.y + dx.y >= texSize.x) fieldT = fieldC;
 
   float div = 0.5f * (fieldR.y - fieldL.y - fieldT.x + fieldB.x);
 
