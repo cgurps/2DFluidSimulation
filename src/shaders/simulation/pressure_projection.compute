@@ -27,14 +27,18 @@ vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = vec2(pixelCoords) / vec2(texSize);
-  vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
-  vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
 
-  float pL = texture2D_bilinear(pressure_READ, texCoords - dx).x;
-  float pR = texture2D_bilinear(pressure_READ, texCoords + dx).x;
-  float pB = texture2D_bilinear(pressure_READ, texCoords - dy).x;
-  float pT = texture2D_bilinear(pressure_READ, texCoords + dy).x;
+  float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
+  float pL = (pixelCoords.x > 0) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x : pC;
+  float pR = (pixelCoords.x < texSize.x - 1) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x : pC;
+  float pB = (pixelCoords.y > 0) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x : pC;
+  float pT = (pixelCoords.y < texSize.y - 1) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x : pC;
 
   vec2 gradP = 0.5f * vec2(pR - pL, pT - pB);
 

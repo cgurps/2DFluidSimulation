@@ -7,23 +7,6 @@ layout(rgba32f, binding = 0) uniform image2D pressure_WRITE;
 layout(rgba32f, binding = 1) uniform sampler2D pressure_READ;
 layout(rgba32f, binding = 2) uniform sampler2D divergence;
 
-//https://community.khronos.org/t/manual-bilinear-filter/58504/7
-vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
-{
-  vec2 textureSize = vec2(texSize);
-  vec2 texelSize = vec2(1.0f / texSize.x, 1.0f / texSize.y);
-
-  vec2 f = fract( uv * textureSize );
-  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
-  vec4 tl = texture2D(t, uv);
-  vec4 tr = texture2D(t, uv + vec2(texelSize.x + 1e-5, 0.0));
-  vec4 bl = texture2D(t, uv + vec2(0.0, texelSize.y + 1e-5));
-  vec4 br = texture2D(t, uv + vec2(texelSize.x, texelSize.y + 1e-5));
-  vec4 tA = mix( tl, tr, f.x );
-  vec4 tB = mix( bl, br, f.x );
-  return mix( tA, tB, f.y );
-}
-
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
@@ -32,15 +15,14 @@ void main()
 
   float dC = texelFetch(divergence, pixelCoords, 0).x;
   float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
-  float pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x;
-  float pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x;
-  float pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x;
-  float pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x;
-
-  if(pixelCoords.x - dx.x < 0) pL = pC;
-  if(pixelCoords.x + dx.x >= texSize.x) pR = pC;
-  if(pixelCoords.y - dx.y < 0) pB = pC;
-  if(pixelCoords.y + dx.y >= texSize.x) pT = pC;
+  float pL = (pixelCoords.x > 0) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x : pC;
+  float pR = (pixelCoords.x < texSize.x - 1) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x : pC;
+  float pB = (pixelCoords.y > 0) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x : pC;
+  float pT = (pixelCoords.y < texSize.y - 1) 
+    ? texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x : pC;
 
   imageStore(pressure_WRITE, pixelCoords, vec4(0.25f * (pL + pR + pB + pT - dC), 0.0f, 0.0f, 1.0f));
 }
