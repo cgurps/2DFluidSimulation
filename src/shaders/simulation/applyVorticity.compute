@@ -14,17 +14,22 @@ void main()
   vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
   vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
 
+  float vL = texelFetchOffset(vorticity, pixelCoords, 0, - dx).x;
+  float vR = texelFetchOffset(vorticity, pixelCoords, 0,   dx).x;
+  float vB = texelFetchOffset(vorticity, pixelCoords, 0, - dy).x;
+  float vT = texelFetchOffset(vorticity, pixelCoords, 0,   dy).x;
+
   float vC = texelFetch(vorticity, pixelCoords, 0).x;
-  float vL = texture2D(vorticity, texCoords - dx).x;
-  float vR = texture2D(vorticity, texCoords + dx).x;
-  float vB = texture2D(vorticity, texCoords - dy).x;
-  float vT = texture2D(vorticity, texCoords + dy).x;
+  if(pixelCoords.x == 0) vL = vC;
+  if(pixelCoords.y == 0) vB = vC;
+  if(pixelCoords.x >= texSize.x - 1) vR = vC;
+  if(pixelCoords.y >= texSize.y - 1) vT = vC;
 
   vec2 force = 0.5f * vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
 
-  force = force / (1e-20 + length(force));
+  force /= 1e-10 + length(force);
 
-  force = 3.5f * force * vC * vec2(1.0f, -1.0f);
+  force *= 4.0f * vC * vec2(1.0f, -1.0f);
 
   imageStore(velocities_READ_WRITE, pixelCoords, imageLoad(velocities_READ_WRITE, pixelCoords) + dt * vec4(force, 0.0f, 0.0f));
 }

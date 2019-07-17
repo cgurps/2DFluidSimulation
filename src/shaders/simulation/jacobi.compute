@@ -15,10 +15,17 @@ void main()
   vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
 
   float dC = texelFetch(divergence, pixelCoords, 0).x;
-  float pL = texture2D(pressure_READ, texCoords - dx).x;
-  float pR = texture2D(pressure_READ, texCoords + dx).x;
-  float pB = texture2D(pressure_READ, texCoords - dy).x;
-  float pT = texture2D(pressure_READ, texCoords + dy).x;
+
+  float pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x;
+  float pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x;
+  float pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x;
+  float pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x;
+
+  float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
+  if(pixelCoords.x == 0) pL = pC;
+  if(pixelCoords.y == 0) pB = pC;
+  if(pixelCoords.x >= texSize.x - 1) pR = pC;
+  if(pixelCoords.y >= texSize.y - 1) pT = pC;
 
   imageStore(pressure_WRITE, pixelCoords, vec4(0.25f * (pL + pR + pB + pT - dC), 0.0f, 0.0f, 1.0f));
 }

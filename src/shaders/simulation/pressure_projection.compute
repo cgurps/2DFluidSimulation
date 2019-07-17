@@ -10,14 +10,19 @@ layout(rgba32f, binding = 2) uniform sampler2D pressure_READ;
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = vec2(pixelCoords) / vec2(texSize);
-  vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
-  vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
 
-  float pL = texture2D(pressure_READ, texCoords - dx).x;
-  float pR = texture2D(pressure_READ, texCoords + dx).x;
-  float pB = texture2D(pressure_READ, texCoords - dy).x;
-  float pT = texture2D(pressure_READ, texCoords + dy).x;
+  float pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx).x;
+  float pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx).x;
+  float pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy).x;
+  float pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy).x;
+
+  float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
+  if(pixelCoords.x == 0) pL = pC;
+  if(pixelCoords.y == 0) pB = pC;
+  if(pixelCoords.x >= texSize.x - 1) pR = pC;
+  if(pixelCoords.y >= texSize.y - 1) pT = pC;
 
   vec2 gradP = 0.5f * vec2(pR - pL, pT - pB);
 

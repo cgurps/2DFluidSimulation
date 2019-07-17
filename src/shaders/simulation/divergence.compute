@@ -13,17 +13,18 @@ void main()
   vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
   vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
 
-  float fieldL = texture2D(velocities_READ, texCoords - dx).x;
-  float fieldR = texture2D(velocities_READ, texCoords + dx).x;
-  float fieldB = texture2D(velocities_READ, texCoords - dy).y;
-  float fieldT = texture2D(velocities_READ, texCoords + dy).y;
+  vec2 fieldL = texelFetchOffset(velocities_READ, pixelCoords, 0, - dx).xy;
+  vec2 fieldR = texelFetchOffset(velocities_READ, pixelCoords, 0,   dx).xy;
+  vec2 fieldB = texelFetchOffset(velocities_READ, pixelCoords, 0, - dy).xy;
+  vec2 fieldT = texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).xy;
 
-  if(texCoords.x - dx.x < 0.0) fieldL *= - 1.0;
-  if(texCoords.x + dx.x > 1.0) fieldR *= - 1.0;
-  if(texCoords.y - dy.y < 0.0) fieldB *= - 1.0;
-  if(texCoords.y + dy.y > 1.0) fieldT *= - 1.0;
+  vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
+  if(pixelCoords.x == 0) fieldL = - fieldC;
+  if(pixelCoords.y == 0) fieldB = - fieldC;
+  if(pixelCoords.x >= texSize.x - 1) fieldR = - fieldC;
+  if(pixelCoords.y >= texSize.y - 1) fieldT = - fieldC;
 
-  float div = 0.5f * (fieldR - fieldL + fieldT - fieldB);
+  float div = 0.5f * (fieldR.x - fieldL.x + fieldT.y - fieldB.y);
 
   imageStore(divergence, pixelCoords, vec4(div, 0.0f, 0.0f, 0.0f));
 }
