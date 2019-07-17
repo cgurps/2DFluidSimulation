@@ -124,6 +124,11 @@ void GLFWHandler::Run()
   int mat_loc = glGetUniformLocation(shader_program, "MVP");
   int tex_loc = glGetUniformLocation(shader_program, "tex");
 
+  GLuint linearSampler;
+  GL_CHECK( glGenSamplers(1, &linearSampler) );
+  GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
+  GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
+
   while (!glfwWindowShouldClose(window))
   {
     simulation->Update();
@@ -139,6 +144,7 @@ void GLFWHandler::Run()
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
     GL_CHECK(glUniform1i(tex_loc, 0));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, simulation->shared_texture));
+    GL_CHECK(glBindSampler(0, linearSampler));
     // set project matrix
     GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
     // now render stuff

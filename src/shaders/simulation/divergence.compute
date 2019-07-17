@@ -18,11 +18,10 @@ void main()
   float fieldB = texture2D(velocities_READ, texCoords - dy).y;
   float fieldT = texture2D(velocities_READ, texCoords + dy).y;
 
-  vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
-  if(texCoords.x - dx.x < 0.0) fieldL = - fieldC.x;
-  if(texCoords.x + dx.x > 1.0) fieldR = - fieldC.x;
-  if(texCoords.y - dy.y < 0.0) fieldB = - fieldC.x;
-  if(texCoords.y + dy.y > 1.0) fieldT = - fieldC.x;
+  if(texCoords.x - dx.x < 0.0) fieldL *= - 1.0;
+  if(texCoords.x + dx.x > 1.0) fieldR *= - 1.0;
+  if(texCoords.y - dy.y < 0.0) fieldB *= - 1.0;
+  if(texCoords.y + dy.y > 1.0) fieldT *= - 1.0;
 
   float div = 0.5f * (fieldR - fieldL + fieldT - fieldB);
 
