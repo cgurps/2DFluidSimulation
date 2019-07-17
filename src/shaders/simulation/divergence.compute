@@ -9,18 +9,20 @@ layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
 void main()
 {
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  const ivec2 dx = ivec2(1, 0); 
-  const ivec2 dy = ivec2(0, 1);
+  vec2 texCoords = vec2(pixelCoords) / vec2(texSize);
+  vec2 dx = vec2(1.0f / float(texSize.x), 0.0f); 
+  vec2 dy = vec2(0.0f, 1.0f / float(texSize.y));
 
-  float fieldC = texelFetch(velocities_READ, pixelCoords, 0).x;
-  float fieldL = (pixelCoords.x > 0)             
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0, - dx).x : - fieldC;
-  float fieldR = (pixelCoords.x < texSize.x - 1) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0,   dx).x : - fieldC;
-  float fieldB = (pixelCoords.y > 0) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0, - dy).y : - fieldC;
-  float fieldT = (pixelCoords.y < texSize.y - 1) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).y : - fieldC;
+  float fieldL = texture2D(velocities_READ, texCoords - dx).x;
+  float fieldR = texture2D(velocities_READ, texCoords + dx).x;
+  float fieldB = texture2D(velocities_READ, texCoords - dy).y;
+  float fieldT = texture2D(velocities_READ, texCoords + dy).y;
+
+  vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
+  if(texCoords.x - dx.x < 0.0) fieldL = - fieldC.x;
+  if(texCoords.x + dx.x > 1.0) fieldR = - fieldC.x;
+  if(texCoords.y - dy.y < 0.0) fieldB = - fieldC.x;
+  if(texCoords.y + dy.y > 1.0) fieldT = - fieldC.x;
 
   float div = 0.5f * (fieldR - fieldL + fieldT - fieldB);
 
