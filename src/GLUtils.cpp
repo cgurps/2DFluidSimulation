@@ -42,6 +42,7 @@ GLuint createTexture2D(const int width, const int height)
 
 GLuint compileShader(const std::string& s, GLenum type)
 {
+  std::cout << "Compiling " << s << "...";
   std::ifstream shader_file(s);
   std::ostringstream shader_buffer;
   shader_buffer << shader_file.rdbuf();
@@ -55,7 +56,11 @@ GLuint compileShader(const std::string& s, GLenum type)
   GLint status;
   glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status);
 
-  if(status == GL_TRUE) return shader_id;
+  if(status == GL_TRUE)
+  {
+    std::cout << " OK" << std::endl;
+    return shader_id;
+  }
   else
   {
     GLint max_length = 0;
