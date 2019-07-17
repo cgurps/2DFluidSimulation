@@ -5,7 +5,7 @@ uniform ivec2 texSize;
 uniform float dt;
 
 layout(rgba32f, binding = 0) uniform image2D velocities_READ_WRITE;
-layout(rgba32f, binding = 1) uniform sampler2D vorticity;
+layout(rgba32f, binding = 1) uniform sampler2D curl;
 
 void main()
 {
@@ -13,12 +13,12 @@ void main()
   const ivec2 dx = ivec2(1, 0); 
   const ivec2 dy = ivec2(0, 1);
 
-  float vL = texelFetchOffset(vorticity, pixelCoords, 0, - dx).x;
-  float vR = texelFetchOffset(vorticity, pixelCoords, 0,   dx).x;
-  float vB = texelFetchOffset(vorticity, pixelCoords, 0, - dy).x;
-  float vT = texelFetchOffset(vorticity, pixelCoords, 0,   dy).x;
+  float vL = texelFetchOffset(curl, pixelCoords, 0, - dx).y;
+  float vR = texelFetchOffset(curl, pixelCoords, 0,   dx).y;
+  float vB = texelFetchOffset(curl, pixelCoords, 0, - dy).y;
+  float vT = texelFetchOffset(curl, pixelCoords, 0,   dy).y;
 
-  float vC = texelFetch(vorticity, pixelCoords, 0).x;
+  float vC = texelFetch(curl, pixelCoords, 0).y;
   if(pixelCoords.x == 0) vL = vC;
   if(pixelCoords.y == 0) vB = vC;
   if(pixelCoords.x >= texSize.x - 1) vR = vC;

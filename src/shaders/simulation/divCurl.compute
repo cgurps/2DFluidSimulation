@@ -24,6 +24,7 @@ void main()
   if(pixelCoords.y >= texSize.y - 1) fieldT = - fieldC;
 
   float div = 0.5f * (fieldR.x - fieldL.x + fieldT.y - fieldB.y);
+  float curl = 0.5f * (fieldR.y - fieldL.y - fieldT.x + fieldB.x);
 
-  imageStore(divergence, pixelCoords, vec4(div, 0.0f, 0.0f, 0.0f));
+  imageStore(divergence, pixelCoords, vec4(div, curl, 0.0f, 0.0f));
 }

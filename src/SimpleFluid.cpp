@@ -64,11 +64,8 @@ void SimpleFluid::Init()
   velocitiesTexture[3] = createTexture2D(width, height);
   fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
 
-  divergenceTexture = createTexture2D(width, height);
-  fillTextureWithFunctor(divergenceTexture, width, height, f);
-
-  vorticity = createTexture2D(width, height);
-  fillTextureWithFunctor(vorticity, width, height, f);
+  divergenceCurlTexture = createTexture2D(width, height);
+  fillTextureWithFunctor(divergenceCurlTexture, width, height, f);
 
   pressureTexture[0] = createTexture2D(width, height);
   pressureTexture[1] = createTexture2D(width, height);
@@ -139,16 +136,15 @@ void SimpleFluid::Update()
     sX = (double) width * sX / (double) handler->width;
     sY = (double) width * (1.0 - sY / (double) handler->height);
     sFact.addSplat(velocitiesTexture[READ], std::make_tuple(sX, sY), std::make_tuple(vScale * (sX - sOriginX), vScale * (sY - sOriginY), 0.0f), 40.0f);
-    sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 5.0f);
+    sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 2.0f);
 
     sOriginX = sX;
     sOriginY = sY;
   }
 
   /********** Vorticity **********/
-  sFact.copy(emptyTexture, vorticity);
-  sFact.computeVorticity(velocitiesTexture[READ], vorticity);
-  sFact.applyVorticity(velocitiesTexture[READ], vorticity, dt);
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
+  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, dt);
 
   /********** Convection **********/
   sFact.simpleAdvect(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[1],   dt);
@@ -157,15 +153,14 @@ void SimpleFluid::Update()
 
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
 
-  /********** Divergence Computation **********/
-  sFact.copy(emptyTexture, divergenceTexture);
-  sFact.divergence(velocitiesTexture[READ], divergenceTexture);
+  /********** Divergence & Curl **********/
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
 
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
   for(int k = 0; k < 30; ++k)
   {
-    sFact.solvePressure(divergenceTexture, pressureTexture[READ], pressureTexture[WRITE]);
+    sFact.solvePressure(divergenceCurlTexture, pressureTexture[READ], pressureTexture[WRITE]);
     std::swap(pressureTexture[READ], pressureTexture[WRITE]);
   }
 
@@ -195,6 +190,6 @@ void SimpleFluid::Update()
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
-  printf("\r%.3fms", 1000.0 / ((stopTime - startTime) / 1000000.0));
+  printf("\r%.3f FPS", 1000.0 / ((stopTime - startTime) / 1000000.0));
   fflush(stdout);
 }

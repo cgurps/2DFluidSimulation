@@ -64,11 +64,8 @@ void Smoke::Init()
   velocitiesTexture[3] = createTexture2D(width, height);
   fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
 
-  divergenceTexture = createTexture2D(width, height);
-  fillTextureWithFunctor(divergenceTexture, width, height, f);
-
-  vorticity = createTexture2D(width, height);
-  fillTextureWithFunctor(vorticity, width, height, f);
+  divergenceCurlTexture = createTexture2D(width, height);
+  fillTextureWithFunctor(divergenceCurlTexture, width, height, f);
 
   pressureTexture[0] = createTexture2D(width, height);
   pressureTexture[1] = createTexture2D(width, height);
@@ -127,10 +124,11 @@ void Smoke::Update()
   sFact.addSplat(temperature[READ],       std::make_tuple(x, 450), std::make_tuple(rd() * 5.0f - 10.0f, 0.0f, 0.0f), 2.0f);
   sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, 450), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 15.0f);
 
+  /********** Divergence & Curl **********/
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
+
   /********** Vorticity **********/
-  sFact.copy(emptyTexture, vorticity);
-  sFact.computeVorticity(velocitiesTexture[READ], vorticity);
-  sFact.applyVorticity(velocitiesTexture[READ], vorticity, dt);
+  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, dt);
 
   /********** Buoyant Force **********/
   sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], dt, 0.25f, 0.1f, 15.0f);
@@ -142,15 +140,11 @@ void Smoke::Update()
 
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
 
-  /********** Divergence Computation **********/
-  sFact.copy(emptyTexture, divergenceTexture);
-  sFact.divergence(velocitiesTexture[READ], divergenceTexture);
-
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
   for(int k = 0; k < 25; ++k)
   {
-    sFact.solvePressure(divergenceTexture, pressureTexture[READ], pressureTexture[WRITE]);
+    sFact.solvePressure(divergenceCurlTexture, pressureTexture[READ], pressureTexture[WRITE]);
     std::swap(pressureTexture[READ], pressureTexture[WRITE]);
   }
 

@@ -26,9 +26,8 @@ class Smoke : public SimulationBase
     GLuint velocitiesTexture[4];
     GLuint density[4];
     GLuint temperature[4];
-    GLuint divergenceTexture;
+    GLuint divergenceCurlTexture;
     GLuint pressureTexture[2];
-    GLuint vorticity;
     GLuint emptyTexture;
 
     GLFWHandler* handler;

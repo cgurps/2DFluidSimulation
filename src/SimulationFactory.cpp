@@ -48,9 +48,9 @@ SimulationFactory::SimulationFactory(const int width, const int height)
   location = glGetUniformLocation(maccormackProgram, "texSize");
   GL_CHECK( glUniform2i(location, this->width, this->height) );
 
-  divergenceProgram = compileAndLinkShader("shaders/simulation/divergence.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(divergenceProgram) );
-  location = glGetUniformLocation(divergenceProgram, "texSize");
+  divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.compute", GL_COMPUTE_SHADER); 
+  GL_CHECK( glUseProgram(divCurlProgram) );
+  location = glGetUniformLocation(divCurlProgram, "texSize");
   GL_CHECK( glUniform2i(location, width, height) );
 
   jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.compute", GL_COMPUTE_SHADER); 
@@ -63,14 +63,9 @@ SimulationFactory::SimulationFactory(const int width, const int height)
   location = glGetUniformLocation(pressureProjectionProgram, "texSize");
   GL_CHECK( glUniform2i(location, width, height) );
 
-  vorticityProgram = compileAndLinkShader("shaders/simulation/vorticity.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(vorticityProgram) );
-  location = glGetUniformLocation(vorticityProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-
   applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(vorticityProgram) );
-  location = glGetUniformLocation(vorticityProgram, "texSize");
+  GL_CHECK( glUseProgram(applyVorticityProgram) );
+  location = glGetUniformLocation(applyVorticityProgram, "texSize");
   GL_CHECK( glUniform2i(location, width, height) );
 
   applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.compute", GL_COMPUTE_SHADER); 
@@ -122,10 +117,10 @@ void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint fie
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
-void SimulationFactory::divergence(const GLuint velocities, const GLuint divergence_WRITE)
+void SimulationFactory::divergenceCurl(const GLuint velocities, const GLuint divergence_curl_WRITE)
 {
-  GL_CHECK( glUseProgram(divergenceProgram) );
-  GL_CHECK( glBindImageTexture(0, divergence_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
+  GL_CHECK( glUseProgram(divCurlProgram) );
+  GL_CHECK( glBindImageTexture(0, divergence_curl_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
@@ -148,15 +143,6 @@ void SimulationFactory::pressureProjection(const GLuint pressure_READ, const GLu
   GL_CHECK( glBindImageTexture(0, velocities_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, pressure_READ) );
-  GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
-  GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
-}
-
-void SimulationFactory::computeVorticity(const GLuint velocities_READ, const GLuint vorticity)
-{
-  GL_CHECK( glUseProgram(vorticityProgram) );
-  GL_CHECK( glBindImageTexture(0, vorticity, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities_READ) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
