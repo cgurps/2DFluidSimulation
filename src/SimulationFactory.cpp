@@ -23,7 +23,7 @@ void fillTextureWithFunctor(GLuint tex,
   }
 
   GL_CHECK( glBindTexture(GL_TEXTURE_2D, tex) );
-  GL_CHECK( glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, data) );
+  GL_CHECK( glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data) );
 
   delete [] data;
 }
@@ -86,8 +86,8 @@ SimulationFactory::~SimulationFactory()
 void SimulationFactory::copy(const GLuint in, const GLuint out)
 {
   GL_CHECK( glUseProgram(copyProgram) );
-  GL_CHECK( glBindImageTexture(0, out, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
-  GL_CHECK( glBindImageTexture(1, in, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, out, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
+  GL_CHECK( glBindImageTexture(1, in, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
@@ -99,7 +99,7 @@ void SimulationFactory::simpleAdvect(const GLuint velocities, const GLuint field
   GLuint location = glGetUniformLocation(simpleAdvectProgram, "dt");
   GL_CHECK( glUniform1f(location, dt) );
 
-  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
@@ -113,7 +113,7 @@ void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint fie
   GLuint location = glGetUniformLocation(maccormackProgram, "dt");
   GL_CHECK( glUniform1f(location, dt) );
 
-  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_hat_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE3) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_1_hat_READ) );
@@ -125,7 +125,7 @@ void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint fie
 void SimulationFactory::divergence(const GLuint velocities, const GLuint divergence_WRITE)
 {
   GL_CHECK( glUseProgram(divergenceProgram) );
-  GL_CHECK( glBindImageTexture(0, divergence_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, divergence_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
@@ -135,7 +135,7 @@ void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint
 {
   GL_CHECK( glUseProgram(jacobiProgram) );
 
-  GL_CHECK( glBindImageTexture(0, pressure_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, pressure_WRITE, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, pressure_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, divergence_READ) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
@@ -145,7 +145,7 @@ void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint
 void SimulationFactory::pressureProjection(const GLuint pressure_READ, const GLuint velocities_READ, const GLuint velocities_WRITE)
 {
   GL_CHECK( glUseProgram(pressureProjectionProgram) );
-  GL_CHECK( glBindImageTexture(0, velocities_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, velocities_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities_READ) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, pressure_READ) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
@@ -155,7 +155,7 @@ void SimulationFactory::pressureProjection(const GLuint pressure_READ, const GLu
 void SimulationFactory::computeVorticity(const GLuint velocities_READ, const GLuint vorticity)
 {
   GL_CHECK( glUseProgram(vorticityProgram) );
-  GL_CHECK( glBindImageTexture(0, vorticity, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, vorticity, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities_READ) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
@@ -168,7 +168,7 @@ void SimulationFactory::applyVorticity(const GLuint velocities_READ_WRITE, const
   GLuint location = glGetUniformLocation(applyVorticityProgram, "dt");
   GL_CHECK( glUniform1f(location, dt) );
 
-  GL_CHECK( glBindImageTexture(0, velocities_READ_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, velocities_READ_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, vorticity) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
@@ -187,7 +187,7 @@ void SimulationFactory::applyBuoyantForce(const GLuint velocities_READ_WRITE, co
   location = glGetUniformLocation(applyBuoyantForceProgram, "t0");
   GL_CHECK( glUniform1f(location, t0) );
 
-  GL_CHECK( glBindImageTexture(0, velocities_READ_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, velocities_READ_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, temperature) );
   GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, density) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
@@ -208,7 +208,7 @@ void SimulationFactory::addSplat(const GLuint field, const std::tuple<int, int> 
   location = glGetUniformLocation(addSmokeSpotProgram, "intensity");
   GL_CHECK( glUniform1f(location, intensity) );
 
-  GL_CHECK( glBindImageTexture(0, field, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F) );
+  GL_CHECK( glBindImageTexture(0, field, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }

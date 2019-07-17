@@ -12,17 +12,18 @@ void main()
   const ivec2 dx = ivec2(1, 0); 
   const ivec2 dy = ivec2(0, 1);
 
+  vec2 fieldL = texelFetchOffset(velocities_READ, pixelCoords, 0, - dx).xy;
+  vec2 fieldR = texelFetchOffset(velocities_READ, pixelCoords, 0,   dx).xy;
+  vec2 fieldB = texelFetchOffset(velocities_READ, pixelCoords, 0, - dy).xy;
+  vec2 fieldT = texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).xy;
+
   vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
-  vec2 fieldL = (pixelCoords.x > 0) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0, - dx).xy : - fieldC;
-  vec2 fieldR = (pixelCoords.x < texSize.x - 1) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0,   dx).xy : - fieldC;
-  vec2 fieldB = (pixelCoords.y > 0) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0, - dy).xy : - fieldC;
-  vec2 fieldT = (pixelCoords.y < texSize.y - 1) 
-    ? texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).xy : - fieldC;
+  if(pixelCoords.x == 0) fieldL = fieldC;
+  if(pixelCoords.y == 0) fieldB = fieldC;
+  if(pixelCoords.x >= texSize.x - 1) fieldR = fieldC;
+  if(pixelCoords.y >= texSize.y - 1) fieldT = fieldC;
 
   float div = 0.5f * (fieldR.y - fieldL.y - fieldT.x + fieldB.x);
 
-  imageStore(vorticity, pixelCoords, vec4(div, 0.0f, 0.0f, 0.0f));
+  imageStore(vorticity, pixelCoords, vec4(div, 0.0f, 0.0f, 1.0f));
 }

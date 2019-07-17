@@ -13,21 +13,22 @@ void main()
   const ivec2 dx = ivec2(1, 0); 
   const ivec2 dy = ivec2(0, 1);
 
+  float vL = texelFetchOffset(vorticity, pixelCoords, 0, - dx).x;
+  float vR = texelFetchOffset(vorticity, pixelCoords, 0,   dx).x;
+  float vB = texelFetchOffset(vorticity, pixelCoords, 0, - dy).x;
+  float vT = texelFetchOffset(vorticity, pixelCoords, 0,   dy).x;
+
   float vC = texelFetch(vorticity, pixelCoords, 0).x;
-  float vL = (pixelCoords.x > 0) 
-    ? texelFetchOffset(vorticity, pixelCoords, 0, - dx).x : vC;
-  float vR = (pixelCoords.x < texSize.x - 1) 
-    ? texelFetchOffset(vorticity, pixelCoords, 0,   dx).x : vC;
-  float vB = (pixelCoords.y > 0) 
-    ? texelFetchOffset(vorticity, pixelCoords, 0, - dy).x : vC;
-  float vT = (pixelCoords.y < texSize.y - 1 ) 
-    ? texelFetchOffset(vorticity, pixelCoords, 0,   dy).x : vC;
+  if(pixelCoords.x == 0) vL = vC;
+  if(pixelCoords.y == 0) vB = vC;
+  if(pixelCoords.x >= texSize.x - 1) vR = vC;
+  if(pixelCoords.y >= texSize.y - 1) vT = vC;
 
   vec2 force = 0.5f * vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
 
-  force /= (1e-20 + length(force));
+  force /= 1e-10 + length(force);
 
-  force *= 5.0f * vC * vec2(1.0f, -1.0f);
+  force *= 4.0f * vC * vec2(1.0f, -1.0f);
 
   imageStore(velocities_READ_WRITE, pixelCoords, imageLoad(velocities_READ_WRITE, pixelCoords) + dt * vec4(force, 0.0f, 0.0f));
 }

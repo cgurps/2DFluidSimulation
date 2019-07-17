@@ -195,6 +195,6 @@ void SimpleFluid::Update()
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
-  printf("\r%.3fms", (stopTime - startTime) / 1000000.0);
+  printf("\r%.3fms", 1000.0 / ((stopTime - startTime) / 1000000.0));
   fflush(stdout);
 }
