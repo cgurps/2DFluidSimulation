@@ -6,6 +6,15 @@
 #include <fstream>
 #include <cmath>
 
+SimpleFluid::~SimpleFluid()
+{
+  GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
+  GL_CHECK( glDeleteTextures(4, density) );
+  GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
+  GL_CHECK( glDeleteTextures(2, pressureTexture) );
+  GL_CHECK( glDeleteTextures(1, &emptyTexture) );
+}
+
 void SimpleFluid::Init()
 {
   GLint work_grp_cnt[3];
@@ -40,15 +49,15 @@ void SimpleFluid::Init()
         float xf = (float) x - 0.5f * (float) this->width;
         float yf = (float) y - 0.5f * (float) this->height;
         float norm = std::sqrt(xf * xf + yf * yf);
-        float vx = (y > 512) ? 10.0f : 1.0f;
+        float vx = (y > this->height / 2) ? 5.0f : - 5.0f;
         float vy = (norm < 1e-5) ? 0.0f :   20.0f * xf / norm;
         return std::make_tuple(vx, 0.0f,
                                0.0f, 0.0f);
       };
 
-  auto f3 = [](int x, int y)
+  auto f3 = [this](int x, int y)
       {
-        if(y > 512) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+        if(y > this->height / 2) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
         else return std::make_tuple(1.0f, 1.0f, 1.0f, 0.0f);
       };
 
@@ -56,13 +65,13 @@ void SimpleFluid::Init()
   density[1] = createTexture2D(width, height);
   density[2] = createTexture2D(width, height);
   density[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(density[0], width, height, f);
+  fillTextureWithFunctor(density[0], width, height, f3);
 
   velocitiesTexture[0] = createTexture2D(width, height);
   velocitiesTexture[1] = createTexture2D(width, height);
   velocitiesTexture[2] = createTexture2D(width, height);
   velocitiesTexture[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
+  fillTextureWithFunctor(velocitiesTexture[0], width, height, f1);
 
   divergenceCurlTexture = createTexture2D(width, height);
   fillTextureWithFunctor(divergenceCurlTexture, width, height, f);

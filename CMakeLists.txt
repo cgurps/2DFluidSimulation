@@ -8,6 +8,8 @@ FIND_PACKAGE( OpenGL REQUIRED )
 
 FIND_PACKAGE(glfw3 3.3 REQUIRED)
 
+FIND_PACKAGE(Threads REQUIRED)
+
 ADD_EXECUTABLE(
     sim
     src/main.cpp
@@ -17,12 +19,14 @@ ADD_EXECUTABLE(
     src/GLUtils.cpp
     src/SimulationFactory.cpp
     src/Smoke.cpp
+    src/lodepng.cpp
 )
 
 TARGET_LINK_LIBRARIES(sim
     glfw
     OpenGL::GL
     ${CMAKE_DL_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
     )
 
 ADD_CUSTOM_COMMAND(TARGET sim POST_BUILD

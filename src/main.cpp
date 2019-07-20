@@ -22,7 +22,7 @@ int main(int argc, char** argv)
   smoke.Init();
   smoke.SetHandler(&handler);
 
-  handler.AttachSimulation(&sFluid);
+  handler.AttachSimulation(&smoke);
   handler.RegisterEvent();
   handler.Run();
 

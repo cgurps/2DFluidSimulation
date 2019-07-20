@@ -11,6 +11,8 @@ class SimpleFluid : public SimulationBase
     SimpleFluid(const int width, const int height, const float dt)
       : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
 
+    ~SimpleFluid();
+
     void Init() override;
     void Update() override;
 

@@ -114,15 +114,16 @@ void Smoke::Update()
   int x = width / 2;
   int y = 75;
   float d = rd();
-  /*
-  sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.0f, 0.41f, 0.55f), 0.1f);
-  sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 2.0f);
-  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 75.0f);
-  */
 
-  sFact.addSplat(density[READ],           std::make_tuple(x, 450), std::make_tuple(0.0f, 0.41f, 0.55f), 0.1f);
-  sFact.addSplat(temperature[READ],       std::make_tuple(x, 450), std::make_tuple(rd() * 5.0f - 10.0f, 0.0f, 0.0f), 2.0f);
-  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, 450), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 15.0f);
+  sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.12f, 0.31f, 0.7f), 1.0f);
+  sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 8.0f);
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 75.0f);
+
+  /*
+  sFact.addSplat(density[READ],           std::make_tuple(x, 850), std::make_tuple(0.0f, 0.41f, 0.55f), 1.0f);
+  sFact.addSplat(temperature[READ],       std::make_tuple(x, 850), std::make_tuple(rd() * 5.0f - 10.0f, 0.0f, 0.0f), 2.0f);
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, 850), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 20.0f);
+  */
 
   /********** Divergence & Curl **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
@@ -180,6 +181,6 @@ void Smoke::Update()
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
-  printf("\rCopy: %f ms", (stopTime - startTime) / 1000000.0);
-  fflush(stdout);
+  //printf("\rCopy: %f ms", (stopTime - startTime) / 1000000.0);
+  //fflush(stdout);
 }

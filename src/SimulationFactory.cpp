@@ -17,7 +17,7 @@ void fillTextureWithFunctor(GLuint tex,
 
       data[pos    ] = r;
       data[pos + 1] = g;
-      data[pos + 2] = g;
+      data[pos + 2] = b;
       data[pos + 3] = a;
     }
   }
