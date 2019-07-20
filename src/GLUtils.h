@@ -10,7 +10,6 @@
 
 #include <string>
 
-#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
 void CheckOpenGLError(const char* stmt, const char* fname, int line);
