@@ -65,13 +65,13 @@ void SimpleFluid::Init()
   density[1] = createTexture2D(width, height);
   density[2] = createTexture2D(width, height);
   density[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(density[0], width, height, f3);
+  fillTextureWithFunctor(density[0], width, height, f);
 
   velocitiesTexture[0] = createTexture2D(width, height);
   velocitiesTexture[1] = createTexture2D(width, height);
   velocitiesTexture[2] = createTexture2D(width, height);
   velocitiesTexture[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(velocitiesTexture[0], width, height, f1);
+  fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
 
   divergenceCurlTexture = createTexture2D(width, height);
   fillTextureWithFunctor(divergenceCurlTexture, width, height, f);
