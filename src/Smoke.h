@@ -11,6 +11,8 @@ class Smoke : public SimulationBase
     Smoke(const int width, const int height, const float dt)
       : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
 
+    ~Smoke();
+
     void Init() override;
     void Update() override;
 

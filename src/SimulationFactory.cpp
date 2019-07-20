@@ -101,6 +101,13 @@ void SimulationFactory::simpleAdvect(const GLuint velocities, const GLuint field
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
+void SimulationFactory::mcAdvect(const GLuint velocities, const GLuint *fields, const float dt)
+{
+  simpleAdvect(velocities, fields[0], fields[1],   dt);
+  simpleAdvect(velocities, fields[1], fields[2], - dt);
+  maccormackStep(velocities, fields[0], fields[2], fields[1], fields[3], dt);
+}
+
 void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint field_n_READ, const GLuint field_n_hat_READ, const GLuint field_n_1_hat_READ, const GLuint field_WRITE, const float dt)
 {
   GL_CHECK( glUseProgram(maccormackProgram) );

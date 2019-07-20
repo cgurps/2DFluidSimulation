@@ -6,6 +6,15 @@
 #include <fstream>
 #include <cmath>
 
+Smoke::~Smoke()
+{
+  GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
+  GL_CHECK( glDeleteTextures(4, density) );
+  GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
+  GL_CHECK( glDeleteTextures(2, pressureTexture) );
+  GL_CHECK( glDeleteTextures(1, &emptyTexture) );
+}
+
 void Smoke::Init()
 {
   GLint work_grp_cnt[3];
@@ -105,25 +114,17 @@ void Smoke::Update()
   glGenQueries(2, queryID);
   glQueryCounter(queryID[0], GL_TIMESTAMP); 
 
-  /********** Adding Splat *********/
+  /********** Adding Smoke Origin *********/
   auto rd = []() -> double
   {
     return (double) rand() / (double) RAND_MAX;
   };
 
-  int x = width / 2;
-  int y = 75;
-  float d = rd();
+  int x = width / 2; int y = 75;
 
   sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.12f, 0.31f, 0.7f), 1.0f);
   sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 8.0f);
   sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 75.0f);
-
-  /*
-  sFact.addSplat(density[READ],           std::make_tuple(x, 850), std::make_tuple(0.0f, 0.41f, 0.55f), 1.0f);
-  sFact.addSplat(temperature[READ],       std::make_tuple(x, 850), std::make_tuple(rd() * 5.0f - 10.0f, 0.0f, 0.0f), 2.0f);
-  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, 850), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 20.0f);
-  */
 
   /********** Divergence & Curl **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
@@ -135,10 +136,7 @@ void Smoke::Update()
   sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], dt, 0.25f, 0.1f, 15.0f);
 
   /********** Convection **********/
-  sFact.simpleAdvect(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[1],   dt);
-  sFact.simpleAdvect(velocitiesTexture[1], velocitiesTexture[1], velocitiesTexture[2], - dt);
-  sFact.maccormackStep(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[2], velocitiesTexture[1], velocitiesTexture[3], dt);
-
+  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
 
   /********** Poisson Solving with Jacobi **********/
@@ -151,25 +149,19 @@ void Smoke::Update()
 
   /********** Pressure Projection **********/
   sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
-
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Fields Advection **********/
-  sFact.simpleAdvect(velocitiesTexture[0], density[0], density[1],   dt);
-  sFact.simpleAdvect(velocitiesTexture[1], density[1], density[2], - dt);
-  sFact.maccormackStep(velocitiesTexture[0], density[0], density[2], density[1], density[3], dt);
-
+  sFact.mcAdvect(velocitiesTexture[READ], density, dt);
   std::swap(density[0], density[3]);
 
-  sFact.simpleAdvect(velocitiesTexture[0], temperature[0], temperature[1], dt);
-  sFact.simpleAdvect(velocitiesTexture[1], temperature[1], temperature[2], - dt);
-  sFact.maccormackStep(velocitiesTexture[0], temperature[0], temperature[2], temperature[1], temperature[3], dt);
-
+  sFact.mcAdvect(velocitiesTexture[READ], temperature, dt);
   std::swap(temperature[0], temperature[3]);
 
-  /********** Copying to render texture **********/
+  /********** Updating the shared texture **********/
   shared_texture = density[READ];
 
+  /********** Time Stuff **********/
   glQueryCounter(queryID[1], GL_TIMESTAMP);
   GLint stopTimerAvailable = 0;
   while (!stopTimerAvailable) {
@@ -177,10 +169,9 @@ void Smoke::Update()
                             GL_QUERY_RESULT_AVAILABLE,
                             &stopTimerAvailable);
   }
-  // get query results
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
-  //printf("\rCopy: %f ms", (stopTime - startTime) / 1000000.0);
-  //fflush(stdout);
+  printf("\r%.3f FPS", 1000.0 / ((stopTime - startTime) / 1000000.0));
+  fflush(stdout);
 }

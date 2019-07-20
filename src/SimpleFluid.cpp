@@ -156,10 +156,7 @@ void SimpleFluid::Update()
   sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, dt);
 
   /********** Convection **********/
-  sFact.simpleAdvect(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[1],   dt);
-  sFact.simpleAdvect(velocitiesTexture[1], velocitiesTexture[1], velocitiesTexture[2], - dt);
-  sFact.maccormackStep(velocitiesTexture[0], velocitiesTexture[0], velocitiesTexture[2], velocitiesTexture[1], velocitiesTexture[3], dt);
-
+  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
 
   /********** Divergence & Curl **********/
@@ -175,19 +172,16 @@ void SimpleFluid::Update()
 
   /********** Pressure Projection **********/
   sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
-
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Fields Advection **********/
-  sFact.simpleAdvect(velocitiesTexture[0], density[0], density[1],   dt);
-  sFact.simpleAdvect(velocitiesTexture[1], density[1], density[2], - dt);
-  sFact.maccormackStep(velocitiesTexture[0], density[0], density[2], density[1], density[3], dt);
-
+  sFact.mcAdvect(velocitiesTexture[READ], density, dt);
   std::swap(density[0], density[3]);
 
-  /********** Copying to render texture **********/
+  /********** Updating the shared texture **********/
   shared_texture = density[READ];
 
+  /********** Time Stuff **********/
   glQueryCounter(queryID[1], GL_TIMESTAMP);
   GLint stopTimerAvailable = 0;
   while (!stopTimerAvailable) {
@@ -195,7 +189,6 @@ void SimpleFluid::Update()
                             GL_QUERY_RESULT_AVAILABLE,
                             &stopTimerAvailable);
   }
-  // get query results
   glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
   glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
   
