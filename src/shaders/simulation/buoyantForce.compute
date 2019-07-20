@@ -7,9 +7,9 @@ uniform float kappa;
 uniform float sigma;
 uniform float t0;
 
-layout(rgba16f, binding = 0) uniform image2D velocities_READ_WRITE;
-layout(rgba16f, binding = 1) uniform sampler2D temperature;
-layout(rgba16f, binding = 2) uniform sampler2D density;
+layout(rgba32f, binding = 0) uniform image2D velocities_READ_WRITE;
+layout(rgba32f, binding = 1) uniform sampler2D temperature;
+layout(rgba32f, binding = 2) uniform sampler2D density;
 
 void main()
 {
