@@ -1,3 +1,3 @@
 # Simple 2D Fluid Simulation on GPU
 
-![SmokeGIF]()
+![SmokeGIF](images/simple_fluid.png)
