@@ -4,8 +4,8 @@ layout(local_size_x = 32, local_size_y = 32) in;
 uniform ivec2 texSize;
 
 layout(rgba32f, binding = 0) uniform image2D velocities_WRITE;
-layout(rgba32f, binding = 1) uniform sampler2D velocities_READ;
-layout(rgba32f, binding = 2) uniform sampler2D pressure_READ;
+layout(binding = 1) uniform sampler2D velocities_READ;
+layout(binding = 2) uniform sampler2D pressure_READ;
 
 void main()
 {
