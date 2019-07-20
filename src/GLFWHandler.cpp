@@ -160,10 +160,12 @@ void GLFWHandler::Run()
     // now render stuff
     GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
+#ifdef EXPORT_IMGS
     //Saving Images
     unsigned char *colors = new unsigned char[3 * simulation->width * simulation->height];
     GL_CHECK(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, colors));
     buffers.push_back(colors);
+#endif
 
     glfwSwapBuffers(window);
   }
