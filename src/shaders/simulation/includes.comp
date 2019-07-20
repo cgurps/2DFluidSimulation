@@ -1,3 +1,4 @@
+//https://stackoverflow.com/questions/2631324/opengl-shading-language-backwards-compatibility
 #if __VERSION__ >= 130
 
 #define TEXTURE_2D texture
