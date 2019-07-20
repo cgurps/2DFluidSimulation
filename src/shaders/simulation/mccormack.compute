@@ -4,11 +4,11 @@ layout(local_size_x = 32, local_size_y = 32) in;
 uniform ivec2 texSize;
 uniform float dt;
 
-layout(rgba32f, binding = 0) uniform image2D field_WRITE;
-layout(rgba32f, binding = 1) uniform sampler2D field_n_READ;
-layout(rgba32f, binding = 2) uniform sampler2D field_n_hat_READ;
-layout(rgba32f, binding = 3) uniform sampler2D field_n_1_hat_READ;
-layout(rgba32f, binding = 4) uniform sampler2D velocities_READ;
+layout(rgba16f, binding = 0) uniform image2D field_WRITE;
+layout(rgba16f, binding = 1) uniform sampler2D field_n_READ;
+layout(rgba16f, binding = 2) uniform sampler2D field_n_hat_READ;
+layout(rgba16f, binding = 3) uniform sampler2D field_n_1_hat_READ;
+layout(rgba16f, binding = 4) uniform sampler2D velocities_READ;
 
 //https://community.khronos.org/t/manual-bilinear-filter/58504/7
 vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
