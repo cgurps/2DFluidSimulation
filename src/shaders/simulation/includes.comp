@@ -1,0 +1,38 @@
+#if __VERSION__ >= 130
+
+#define TEXTURE_2D texture
+#define TEXTURE_3D texture
+#define TEXTURE_RECT texture
+#define TEXTURE_CUBE texture
+
+#if __VERSION__ >= 150
+#define TEXTURE_SIZE(sampler) textureSize(sampler, 0)
+#else
+#define TEXTURE_SIZE(sampler) sampler ## _Size
+#endif
+
+#else
+
+#define TEXTURE_2D texture2D
+#define TEXTURE_3D texture3D
+#define TEXTURE_RECT texture2DRect
+#define TEXTURE_CUBE textureCube
+
+#endif
+
+//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
+{
+  vec2 tSize = TEXTURE_SIZE(t);
+  vec2 texelSize = vec2(1.0f / tSize.x, 1.0f / tSize.y);
+
+  vec2 f = fract( uv * tSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 tl = TEXTURE_2D(t, uv);
+  vec4 tr = TEXTURE_2D(t, uv + vec2(texelSize.x, 0.0));
+  vec4 bl = TEXTURE_2D(t, uv + vec2(0.0, texelSize.y));
+  vec4 br = TEXTURE_2D(t, uv + vec2(texelSize.x, texelSize.y));
+  vec4 tA = mix( tl, tr, f.x );
+  vec4 tB = mix( bl, br, f.x );
+  return mix( tA, tB, f.y );
+}

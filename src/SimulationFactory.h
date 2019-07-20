@@ -28,7 +28,6 @@ class SimulationFactory
     void applyVorticity(const GLuint velocities_READ_WRITE, const GLuint vorticity, const float dt);
     void applyBuoyantForce(const GLuint velocities_READ_WRITE, const GLuint temperature, const GLuint density, const float dt, const float kappa, const float sigma, const float t0);
   private:
-    int width, height;
     int globalSizeX, globalSizeY;
 
     GLint copyProgram;
@@ -41,6 +40,5 @@ class SimulationFactory
     GLint applyVorticityProgram;
     GLint applyBuoyantForceProgram;
 };
-
 
 #endif //SIMULATIONFACTORY_H

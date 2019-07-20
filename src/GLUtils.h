@@ -10,6 +10,9 @@
 
 #include <string>
 
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
+
 void CheckOpenGLError(const char* stmt, const char* fname, int line);
 
 #define GL_CHECK(stmt) do { \
@@ -20,4 +23,5 @@ void CheckOpenGLError(const char* stmt, const char* fname, int line);
 GLuint createTexture2D(const int width, const int height);
 GLuint compileShader(const std::string& s, GLenum type);
 GLuint compileAndLinkShader(const std::string& s, GLenum type);
+std::string preprocessIncludes(const std::string source, const std::string shader_path, int level);
 void releaseSamplers(int n);

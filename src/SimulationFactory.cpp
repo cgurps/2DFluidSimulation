@@ -29,49 +29,18 @@ void fillTextureWithFunctor(GLuint tex,
 }
 
 SimulationFactory::SimulationFactory(const int width, const int height)
-  : width(width), height(height), globalSizeX(width / 32), globalSizeY(height / 32)
+  : globalSizeX(width / 32), globalSizeY(height / 32)
 {
-  copyProgram = compileAndLinkShader("shaders/simulation/copy.compute", GL_COMPUTE_SHADER);
+  copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
 
-  addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(addSmokeSpotProgram) );
-  GLuint location = glGetUniformLocation(addSmokeSpotProgram, "texSize");
-  GL_CHECK( glUniform2i(location, this->width, this->height) );
-
-  simpleAdvectProgram = compileAndLinkShader("shaders/simulation/advect.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(simpleAdvectProgram) );
-  location = glGetUniformLocation(simpleAdvectProgram, "texSize");
-  GL_CHECK( glUniform2i(location, this->width, this->height) );
-
-  maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.compute", GL_COMPUTE_SHADER);
-  GL_CHECK( glUseProgram(maccormackProgram) );
-  location = glGetUniformLocation(maccormackProgram, "texSize");
-  GL_CHECK( glUniform2i(location, this->width, this->height) );
-
-  divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(divCurlProgram) );
-  location = glGetUniformLocation(divCurlProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-
-  jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(jacobiProgram) );
-  location = glGetUniformLocation(jacobiProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-
-  pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(pressureProjectionProgram) );
-  location = glGetUniformLocation(pressureProjectionProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-
-  applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(applyVorticityProgram) );
-  location = glGetUniformLocation(applyVorticityProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
-
-  applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.compute", GL_COMPUTE_SHADER); 
-  GL_CHECK( glUseProgram(applyBuoyantForceProgram) );
-  location = glGetUniformLocation(applyBuoyantForceProgram, "texSize");
-  GL_CHECK( glUniform2i(location, width, height) );
+  addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
+  simpleAdvectProgram = compileAndLinkShader("shaders/simulation/advect.comp", GL_COMPUTE_SHADER); 
+  maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
+  divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.comp", GL_COMPUTE_SHADER); 
+  jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.comp", GL_COMPUTE_SHADER); 
+  pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER); 
+  applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.comp", GL_COMPUTE_SHADER); 
+  applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.comp", GL_COMPUTE_SHADER); 
 }
 
 SimulationFactory::~SimulationFactory()

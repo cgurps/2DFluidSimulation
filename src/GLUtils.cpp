@@ -46,7 +46,7 @@ GLuint compileShader(const std::string& s, GLenum type)
   std::ifstream shader_file(s);
   std::ostringstream shader_buffer;
   shader_buffer << shader_file.rdbuf();
-  std::string shader_string = shader_buffer.str();
+  std::string shader_string = preprocessIncludes(shader_buffer.str(), "shaders/simulation/", 32);
   const GLchar *shader_source = shader_string.c_str();
 
   GLuint shader_id = glCreateShader(type);
@@ -68,7 +68,7 @@ GLuint compileShader(const std::string& s, GLenum type)
     char buffer[max_length];
     glGetShaderInfoLog(shader_id, max_length, &max_length, buffer);
     glDeleteShader(shader_id);
-    std::cout << buffer << std::endl;
+    std::cout << std::endl << buffer << std::endl;
     exit(1);
   }
 }
@@ -81,6 +81,41 @@ GLuint compileAndLinkShader(const std::string& s, GLenum type)
   GL_CHECK( glLinkProgram(program) );
 
   return program;
+}
+
+std::string preprocessIncludes( const std::string source, const std::string shader_path, int level /*= 0 */ )
+{
+  static const boost::regex re("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+  std::stringstream input;
+  std::stringstream output;
+  input << source;
+
+  size_t line_number = 1;
+  boost::smatch matches;
+
+  std::string line;
+  while(std::getline(input,line))
+  {
+    if (boost::regex_search(line, matches, re))
+    {
+      std::string include_file = matches[1];
+      std::string include_string;
+
+      std::ifstream shader_file(shader_path + include_file);
+      std::ostringstream shader_buffer;
+      shader_buffer << shader_file.rdbuf();
+      include_string = shader_buffer.str();
+
+      output << preprocessIncludes(include_string, shader_path, level + 1) << std::endl;
+    }
+    else
+    {
+      output << line << std::endl;
+    }
+    ++line_number;
+  }
+
+  return output.str();
 }
 
 void releaseSamplers(const int n)

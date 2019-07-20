@@ -18,9 +18,11 @@ int main(int argc, char** argv)
   sFluid.Init();
   sFluid.SetHandler(&handler);
 
+  /*
   Smoke smoke(simWidth, simHeight, dt);
   smoke.Init();
   smoke.SetHandler(&handler);
+  */
 
   handler.AttachSimulation(&sFluid);
   handler.RegisterEvent();
