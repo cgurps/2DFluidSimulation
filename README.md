@@ -9,7 +9,7 @@
 This project is an implementation of an eulerian fluid simulation on GPU using OpenGL 4.3 compute shaders capabilities.
 
 ## Getting Started
-You will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [GLFW](https://www.glfw.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
+You will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [GLFW](https://www.glfw.org/) and [Boost](https://www.boost.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
 
 ```
 mkdir build
@@ -17,6 +17,8 @@ cd build
 cmake ..
 make
 ```
+
+You can query the program options using `-h`.
 
 ## Numerical Scheme
 As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. The simulation is breaked down into an advection step using a [Maccormack](http://physbam.stanford.edu/~fedkiw/papers/stanford2006-09.pdf) scheme and a poisson equation of the Helmholtz decomposition (using a Jacobi method) to make the fluid divergence free. The simulation also contains the vorticity confinement method (which computes the curl of the velocity field and then add the forces to it).
