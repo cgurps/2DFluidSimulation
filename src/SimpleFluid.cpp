@@ -46,10 +46,10 @@ void SimpleFluid::Init()
   //Velocities init function
   auto f1 = [this](int x, int y)
       {
-        float xf = (float) x - 0.5f * (float) this->width;
-        float yf = (float) y - 0.5f * (float) this->height;
+        float xf = (float) x - 0.5f * (float) this->options->simWidth;
+        float yf = (float) y - 0.5f * (float) this->options->simHeight;
         float norm = std::sqrt(xf * xf + yf * yf);
-        float vx = (y > this->height / 2) ? 5.0f : - 5.0f;
+        float vx = (y > this->options->simHeight / 2) ? 5.0f : - 5.0f;
         float vy = (norm < 1e-5) ? 0.0f :   20.0f * xf / norm;
         return std::make_tuple(vx, 0.0f,
                                0.0f, 0.0f);
@@ -57,31 +57,31 @@ void SimpleFluid::Init()
 
   auto f3 = [this](int x, int y)
       {
-        if(y > this->height / 2) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+        if(y > this->options->simHeight / 2) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
         else return std::make_tuple(1.0f, 1.0f, 1.0f, 0.0f);
       };
 
-  density[0] = createTexture2D(width, height);
-  density[1] = createTexture2D(width, height);
-  density[2] = createTexture2D(width, height);
-  density[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(density[0], width, height, f);
+  density[0] = createTexture2D(options->simWidth, options->simHeight);
+  density[1] = createTexture2D(options->simWidth, options->simHeight);
+  density[2] = createTexture2D(options->simWidth, options->simHeight);
+  density[3] = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
 
-  velocitiesTexture[0] = createTexture2D(width, height);
-  velocitiesTexture[1] = createTexture2D(width, height);
-  velocitiesTexture[2] = createTexture2D(width, height);
-  velocitiesTexture[3] = createTexture2D(width, height);
-  fillTextureWithFunctor(velocitiesTexture[0], width, height, f);
+  velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
+  velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
+  velocitiesTexture[2] = createTexture2D(options->simWidth, options->simHeight);
+  velocitiesTexture[3] = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f);
 
-  divergenceCurlTexture = createTexture2D(width, height);
-  fillTextureWithFunctor(divergenceCurlTexture, width, height, f);
+  divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(divergenceCurlTexture, options->simWidth, options->simHeight, f);
 
-  pressureTexture[0] = createTexture2D(width, height);
-  pressureTexture[1] = createTexture2D(width, height);
-  fillTextureWithFunctor(pressureTexture[0], width, height, f);
+  pressureTexture[0] = createTexture2D(options->simWidth, options->simHeight);
+  pressureTexture[1] = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(pressureTexture[0], options->simWidth, options->simHeight, f);
 
-  emptyTexture = createTexture2D(width, height);
-  fillTextureWithFunctor(emptyTexture, width, height,
+  emptyTexture = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(emptyTexture, options->simWidth, options->simHeight,
       [](int x, int y)
       {
         return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
@@ -96,8 +96,8 @@ void SimpleFluid::SetHandler(GLFWHandler* hand)
 void SimpleFluid::AddSplat()
 {
   glfwGetCursorPos(handler->window, &sOriginX, &sOriginY);
-  sOriginX = (double) width * sOriginX / (double) handler->width;
-  sOriginY = (double) width * (1.0 - sOriginY / (double) handler->height);
+  sOriginX = (double) options->simWidth * sOriginX / (double) options->windowWidth;
+  sOriginY = (double) options->simHeight * (1.0 - sOriginY / (double) options->windowHeight);
 
   addSplat = true;
 }
@@ -129,8 +129,8 @@ void SimpleFluid::Update()
   /********** Adding Splat *********/
   while(nbSplat > 0)
   {
-    int x = std::clamp(static_cast<int>(width * rd()), 50, width - 50);
-    int y = std::clamp(static_cast<int>(height * rd()), 50, height - 50);
+    int x = std::clamp(static_cast<unsigned int>(options->simWidth * rd()), 50u, options->simWidth - 50);
+    int y = std::clamp(static_cast<unsigned int>(options->simHeight * rd()), 50u, options->simHeight - 50);
     sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(100.0f * rd() - 50.0f, 100.0f * rd() - 50.0f, 0.0f), 75.0f);
     sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 8.0f);
 
@@ -142,8 +142,8 @@ void SimpleFluid::Update()
     float vScale = 1.0f;
     double sX, sY;
     glfwGetCursorPos(handler->window, &sX, &sY);
-    sX = (double) width * sX / (double) handler->width;
-    sY = (double) width * (1.0 - sY / (double) handler->height);
+    sX = (double) options->simWidth * sX / (double) options->windowWidth;
+    sY = (double) options->simHeight * (1.0 - sY / (double) options->windowHeight);
     sFact.addSplat(velocitiesTexture[READ], std::make_tuple(sX, sY), std::make_tuple(vScale * (sX - sOriginX), vScale * (sY - sOriginY), 0.0f), 40.0f);
     sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 2.0f);
 
@@ -153,10 +153,10 @@ void SimpleFluid::Update()
 
   /********** Vorticity **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, dt);
+  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, options->dt);
 
   /********** Convection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, dt);
+  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, options->dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
 
   /********** Divergence & Curl **********/
@@ -175,7 +175,7 @@ void SimpleFluid::Update()
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Fields Advection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], density, dt);
+  sFact.mcAdvect(velocitiesTexture[READ], density, options->dt);
   std::swap(density[0], density[3]);
 
   /********** Updating the shared texture **********/

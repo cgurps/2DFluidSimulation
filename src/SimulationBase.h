@@ -2,12 +2,13 @@
 #define SIMULATIONBASE_H
 
 #include "GLUtils.h"
+#include "ProgramOptions.h"
 
 class SimulationBase
 {
   public:
-    SimulationBase(const int width, const int height, const float dt)
-      : width(width), height(height), dt(dt)
+    SimulationBase(ProgramOptions *options)
+      : options(options)
     {}
 
     ~SimulationBase()
@@ -21,9 +22,7 @@ class SimulationBase
 
     GLuint shared_texture;
 
-    int width, height;
-
-    float dt;
+    ProgramOptions *options;
 };
 
 #endif //SIMULATIONBASE_H

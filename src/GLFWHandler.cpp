@@ -9,8 +9,8 @@ static void glfwErrorCallback(int error, const char* description)
   std::cerr << "Error(" << error << "): " << description << std::endl;
 }
 
-GLFWHandler::GLFWHandler(int width, int height)
-  : width(width), height(height)
+GLFWHandler::GLFWHandler(ProgramOptions *options)
+  : options(options)
 {
   glfwSetErrorCallback(glfwErrorCallback);
 
@@ -22,7 +22,7 @@ GLFWHandler::GLFWHandler(int width, int height)
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  window = glfwCreateWindow(width, height, "Fluid Simulation", NULL, NULL);
+  window = glfwCreateWindow(options->windowWidth, options->windowHeight, "Fluid Simulation", NULL, NULL);
   if(!window)
     std::cerr << "GLFW Window creation failed!" << std::endl;
 
@@ -200,6 +200,6 @@ void GLFWHandler::Run()
     else
       sprintf(path, "frame_%i.png", i); 
 
-    storeImage(path, buffers[i], simulation->width, simulation->height);
+    storeImage(path, buffers[i], options->simWidth, options->simHeight);
   }
 }

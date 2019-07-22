@@ -8,8 +8,8 @@
 class Smoke : public SimulationBase
 {
   public:
-    Smoke(const int width, const int height, const float dt)
-      : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
+    Smoke(ProgramOptions *options)
+      : SimulationBase(options), sFact(SimulationFactory(options)) {}
 
     ~Smoke();
 

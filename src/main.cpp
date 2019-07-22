@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "ProgramOptions.h"
+
 #include "GLFWHandler.h"
 #include "SimpleFluid.h"
 #include "Smoke.h"
@@ -8,23 +10,31 @@ int main(int argc, char** argv)
 {
   srand(time(NULL));
 
-  int windowWidth = 1000, windowHeight = 1000;
-  int simWidth = 1024, simHeight = 1024;
-  float dt = 0.1f;
+  ProgramOptions options = parseOptions(argc, argv);
 
-  GLFWHandler handler(windowWidth, windowHeight);
+  GLFWHandler handler(&options);
 
-  SimpleFluid sFluid(simWidth, simHeight, dt);
-  sFluid.Init();
-  sFluid.SetHandler(&handler);
-
-  /*
-  Smoke smoke(simWidth, simHeight, dt);
-  smoke.Init();
-  smoke.SetHandler(&handler);
-  */
-
-  handler.AttachSimulation(&sFluid);
+  SimulationBase *sim;
+  switch(options.simType)
+  {
+    case SPLATS:
+    {
+      SimpleFluid *sFluid = new SimpleFluid(&options);
+      sFluid->Init();
+      sFluid->SetHandler(&handler);
+      sim = sFluid;
+      break;
+    }
+    case SMOKE:
+    {
+      Smoke *smoke = new Smoke(&options);
+      smoke->Init();
+      sim = smoke;
+      break;
+    }
+  }
+  
+  handler.AttachSimulation(sim);
   handler.RegisterEvent();
   handler.Run();
 

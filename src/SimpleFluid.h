@@ -8,8 +8,8 @@
 class SimpleFluid : public SimulationBase
 {
   public:
-    SimpleFluid(const int width, const int height, const float dt)
-      : SimulationBase(width, height, dt), sFact(SimulationFactory(width, height)) {}
+    SimpleFluid(ProgramOptions *options)
+      : SimulationBase(options), sFact(SimulationFactory(options)) {}
 
     ~SimpleFluid();
 

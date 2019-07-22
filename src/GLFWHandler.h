@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "GLUtils.h"
+#include "ProgramOptions.h"
 
 class SimulationBase;
 
@@ -11,7 +12,7 @@ class GLFWHandler
 {
   public:
     GLFWHandler() = delete; 
-    GLFWHandler(int width, int height);
+    GLFWHandler(ProgramOptions *options);
 
     ~GLFWHandler();
 
@@ -20,7 +21,7 @@ class GLFWHandler
 
     void Run();
 
-    int width, height;
+    ProgramOptions *options;
 
     GLFWwindow* window;
 

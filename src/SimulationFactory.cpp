@@ -28,8 +28,8 @@ void fillTextureWithFunctor(GLuint tex,
   delete [] data;
 }
 
-SimulationFactory::SimulationFactory(const int width, const int height)
-  : globalSizeX(width / 32), globalSizeY(height / 32)
+SimulationFactory::SimulationFactory(ProgramOptions *options)
+  : options(options), globalSizeX(options->simWidth / 32), globalSizeY(options->simHeight / 32)
 {
   copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
 

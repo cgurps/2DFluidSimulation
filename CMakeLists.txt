@@ -10,7 +10,7 @@ FIND_PACKAGE(glfw3 3.3 REQUIRED)
 
 FIND_PACKAGE(Threads REQUIRED)
 
-FIND_PACKAGE(Boost COMPONENTS regex REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS regex program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 ADD_EXECUTABLE(
@@ -23,6 +23,7 @@ ADD_EXECUTABLE(
     src/SimulationFactory.cpp
     src/Smoke.cpp
     src/lodepng.cpp
+    src/ProgramOptions.cpp
 )
 
 TARGET_LINK_LIBRARIES(sim
