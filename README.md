@@ -21,6 +21,9 @@ make
 You can query the program options using `-h`.
 
 ## Numerical Scheme
+We solve the Navier-Stokes equation for incompressible fluids:
+![NS]{images/NS.png}
+
 As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. The simulation is breaked down into an advection step using a [Maccormack](http://physbam.stanford.edu/~fedkiw/papers/stanford2006-09.pdf) scheme and a poisson equation of the Helmholtz decomposition (using a Jacobi method) to make the fluid divergence free. The simulation also contains the vorticity confinement method (which computes the curl of the velocity field and then add the forces to it).
 
 ## Implementation
