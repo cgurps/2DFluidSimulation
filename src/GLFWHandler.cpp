@@ -110,6 +110,13 @@ static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, i
   }
 }
 
+static void windowResizeCallback(GLFWwindow* window, int width, int height)
+{
+  GLFWHandler *handler = (GLFWHandler*) glfwGetWindowUserPointer(window);
+  handler->options->windowWidth = width;
+  handler->options->windowHeight = height;
+}
+
 /*************************************/
 
 void GLFWHandler::RegisterEvent()
@@ -117,6 +124,7 @@ void GLFWHandler::RegisterEvent()
   glfwSetWindowUserPointer(window, this);  
   glfwSetMouseButtonCallback(window, mouseCallBack);
   glfwSetKeyCallback(window, keyCallBack);
+  glfwSetWindowSizeCallback(window, windowResizeCallback);
 }
 
 void GLFWHandler::Run()
@@ -144,6 +152,10 @@ void GLFWHandler::Run()
     simulation->Update();
 
     glfwPollEvents();
+
+    int displayW, displayH;
+    glfwGetFramebufferSize(window, &displayW, &displayH);
+    GL_CHECK(glViewport(0, 0, displayW, displayH));
 
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
