@@ -119,6 +119,7 @@ float rd()
 
 void SimpleFluid::Update()
 {
+  /*
   GLint64 startTime, stopTime;
   GLuint queryID[2];
 
@@ -191,6 +192,7 @@ void SimpleFluid::Update()
   shared_texture = density[READ];
 
   /********** Time Stuff **********/
+  /*
   glQueryCounter(queryID[1], GL_TIMESTAMP);
   GLint stopTimerAvailable = 0;
   while (!stopTimerAvailable) {
@@ -203,4 +205,5 @@ void SimpleFluid::Update()
   
   printf("\r%.3f FPS", 1000.0 / ((stopTime - startTime) / 1000000.0));
   fflush(stdout);
+  */
 }

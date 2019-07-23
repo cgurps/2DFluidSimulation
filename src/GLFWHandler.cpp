@@ -1,5 +1,3 @@
-#include <thread> 
-
 #include "GLFWHandler.h"
 #include "SimulationBase.h"
 #include "lodepng.h"
@@ -20,7 +18,7 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
   window = glfwCreateWindow(options->windowWidth, options->windowHeight, "Fluid Simulation", NULL, NULL);
   if(!window)
@@ -31,7 +29,7 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     std::cerr << "Failed to initialize GLAD" << std::endl;
 
-  printf("OpenGL version supported by this platform (%s): \n",
+  printf("OpenGL version supported by this platform (%s)\n",
       glGetString(GL_VERSION));
   printf("Supported GLSL version is %s.\n",
       glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -43,6 +41,10 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
 
   std::cout << "VAO Created." << std::endl;
 
+  /*********** VBO ***********/
+  /** These corresponds to the 
+   * 2D screen coordinates of the texture 
+   **/
   float vertices[] = {
     -1.0f, -1.0f,
     -1.0f,  1.0f,
@@ -129,6 +131,7 @@ void GLFWHandler::RegisterEvent()
 
 void GLFWHandler::Run()
 {
+  /********** MVP MATRIX **********/
   const float matrix[16] =
   {
       1.0f, 0.0f, 0.0f, 0.0f,
@@ -140,36 +143,58 @@ void GLFWHandler::Run()
   int mat_loc = glGetUniformLocation(shader_program, "MVP");
   int tex_loc = glGetUniformLocation(shader_program, "tex");
 
+  /********** LINEAR SAMPLER FOR TEXTURE RENDERING **********/
   GLuint linearSampler;
   GL_CHECK( glGenSamplers(1, &linearSampler) );
   GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
   GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
 
+  /********** COMPUTE SHADER TIMINGS ***********/
+  GLint64 startTime, stopTime;
+  GLuint queryID[2];
+
+  /********** SAVING IMAGES **********/
   std::vector<unsigned char*> buffers;
 
+  /********** RENDERING & SIMULATION LOOP ***********/
   while (!glfwWindowShouldClose(window))
   {
+    /********** GENERATING QUERIES FOR TIMINGS **********/
+    GL_CHECK(glGenQueries(2, queryID));
+    GL_CHECK(glQueryCounter(queryID[0], GL_TIMESTAMP)); 
+
+    /********** UPDATING THE SIMULATION **********/
     simulation->Update();
+
+    /********** COMPUTE SHADER EXECUTION TIME *********/
+    GL_CHECK(glQueryCounter(queryID[1], GL_TIMESTAMP));
+    GLint stopTimerAvailable = 0;
+    while (!stopTimerAvailable) {
+        GL_CHECK(glGetQueryObjectiv(queryID[1],
+                              GL_QUERY_RESULT_AVAILABLE,
+                              &stopTimerAvailable));
+    }
+    GL_CHECK(glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime));
+    GL_CHECK(glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime));
+  
+    printf("\r%.3f ms", (stopTime - startTime) / 1000000.0);
+    fflush(stdout);
 
     glfwPollEvents();
 
+    /********** RENDERING THE TEXTURE **********/
     int displayW, displayH;
     glfwGetFramebufferSize(window, &displayW, &displayH);
     GL_CHECK(glViewport(0, 0, displayW, displayH));
 
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
-    GL_CHECK(glEnable(GL_DEPTH_TEST));
-    // bind shader
     GL_CHECK(glUseProgram(shader_program));
-    // bind texture
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
     GL_CHECK(glUniform1i(tex_loc, 0));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, simulation->shared_texture));
     GL_CHECK(glBindSampler(0, linearSampler));
-    // set project matrix
     GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
-    // now render stuff
     GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
 #ifdef EXPORT_IMGS
@@ -182,6 +207,7 @@ void GLFWHandler::Run()
     glfwSwapBuffers(window);
   }
 
+#ifdef EXPORT_IMGS
   auto storeImage = [](const char* path, const unsigned char* colors, unsigned int w, unsigned int h)
   {
     std::cout << "Storing " << path << std::endl;
@@ -214,4 +240,5 @@ void GLFWHandler::Run()
 
     storeImage(path, buffers[i], options->simWidth, options->simHeight);
   }
+#endif
 }
