@@ -24,7 +24,7 @@ void CheckOpenGLError(const char* stmt, const char* fname, int line)
   }
 }
 
-GLuint createTexture2D(const int width, const int height)
+GLuint createTexture2D(const unsigned width, const unsigned height)
 {
   GLuint tex;
   GL_CHECK( glGenTextures(1, &tex) );
@@ -116,10 +116,4 @@ std::string preprocessIncludes( const std::string source, const std::string shad
   }
 
   return output.str();
-}
-
-void releaseSamplers(const int n)
-{
-  for(int i = 0; i <= n; ++i)
-    GL_CHECK( glBindSampler(i, 0) );
 }

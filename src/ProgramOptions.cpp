@@ -36,8 +36,8 @@ ProgramOptions parseOptions(int argc, char* argv[])
 
   po::options_description poWindow("Window options");
   poWindow.add_options()
-    ("windowWidth", po::value<unsigned int>(&options.windowWidth)->default_value(800), "window width")
-    ("windowHeight", po::value<unsigned int>(&options.windowHeight)->default_value(800), "window height")
+    ("windowWidth", po::value<unsigned>(&options.windowWidth)->default_value(800), "window width")
+    ("windowHeight", po::value<unsigned>(&options.windowHeight)->default_value(800), "window height")
   ;
 
   po::options_description poSim("Simulation options");
@@ -45,8 +45,8 @@ ProgramOptions parseOptions(int argc, char* argv[])
     ("simType,s", po::value<SimulationType>(&options.simType)->default_value(SPLATS), "type of simulation (splats, smoke)")
     ("deltaTime,t", po::value<float>(&options.dt)->default_value(0.1f), "time step for the simulation")
     ("rk-order", po::value<int>(&options.RKorder)->default_value(4), "order for the runge-kutta integrator")
-    ("simWidth", po::value<unsigned int>(&options.simWidth)->default_value(1024), "simulation width (must be a power of 2)")
-    ("simHeight", po::value<unsigned int>(&options.simHeight)->default_value(1024), "simulation height (must be a power of 2)")
+    ("simWidth", po::value<unsigned>(&options.simWidth)->default_value(1024), "simulation width (must be a power of 2)")
+    ("simHeight", po::value<unsigned>(&options.simHeight)->default_value(1024), "simulation height (must be a power of 2)")
   ;
 
   po::options_description po_options("sim [options]");

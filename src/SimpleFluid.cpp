@@ -17,45 +17,26 @@ SimpleFluid::~SimpleFluid()
 
 void SimpleFluid::Init()
 {
-  GLint work_grp_cnt[3];
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_grp_cnt[0]) );
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_grp_cnt[1]) );
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_grp_cnt[2]) );
-
-  GLint work_grp_size[3];
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &work_grp_size[0]) );
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &work_grp_size[1]) );
-  GL_CHECK( glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &work_grp_size[2]) );
-
-  GLint work_grp_inv;
-  GL_CHECK( glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_grp_inv) );
- 
-  printf("Max global (total) work group size x:%i y:%i z:%i\n",
-    work_grp_cnt[0], work_grp_cnt[1], work_grp_cnt[2]);
-  printf("Max local (in one shader) work group sizes x:%i y:%i z:%i\n",
-    work_grp_size[0], work_grp_size[1], work_grp_size[2]);
-  printf("Max local work group invocations %i\n", work_grp_inv);
-
   /********** Texture Initilization **********/
-  auto f = [](int x, int y)
+  auto f = [](unsigned, unsigned)
       {
         return std::make_tuple(0.0f, 0.0f,
                                0.0f, 0.0f);
       };
 
   //Velocities init function
-  auto f1 = [this](int x, int y)
+  auto f1 = [this](unsigned x, unsigned y)
       {
         float xf = (float) x - 0.5f * (float) this->options->simWidth;
         float yf = (float) y - 0.5f * (float) this->options->simHeight;
         float norm = std::sqrt(xf * xf + yf * yf);
         float vx = (y > this->options->simHeight / 2) ? 5.0f : - 5.0f;
-        float vy = (norm < 1e-5) ? 0.0f :   20.0f * xf / norm;
+        float vy = (norm < 1e-5) ? 0.0f : 20.0f * xf / norm;
         return std::make_tuple(vx, 0.0f,
                                0.0f, 0.0f);
       };
 
-  auto f3 = [this](int x, int y)
+  auto f3 = [this](unsigned x, unsigned y)
       {
         if(y > this->options->simHeight / 2) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
         else return std::make_tuple(1.0f, 1.0f, 1.0f, 0.0f);
@@ -81,16 +62,7 @@ void SimpleFluid::Init()
   fillTextureWithFunctor(pressureTexture[0], options->simWidth, options->simHeight, f);
 
   emptyTexture = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(emptyTexture, options->simWidth, options->simHeight,
-      [](int x, int y)
-      {
-        return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
-      });
-}
-
-void SimpleFluid::SetHandler(GLFWHandler* hand)
-{
-  handler = hand;
+  fillTextureWithFunctor(emptyTexture, options->simWidth, options->simHeight, f);
 }
 
 void SimpleFluid::AddSplat()

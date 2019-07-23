@@ -82,6 +82,7 @@ GLFWHandler::~GLFWHandler()
 void GLFWHandler::AttachSimulation(SimulationBase* sim)
 {
   simulation = sim;
+  simulation->Init();
 }
 
 /********** Event Callbacks **********/

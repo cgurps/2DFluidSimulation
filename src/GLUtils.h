@@ -19,8 +19,7 @@ void CheckOpenGLError(const char* stmt, const char* fname, int line);
   CheckOpenGLError(#stmt, __FILE__, __LINE__); \
 } while (0)
 
-GLuint createTexture2D(const int width, const int height);
+GLuint createTexture2D(const unsigned width, const unsigned height);
 GLuint compileShader(const std::string& s, GLenum type);
 GLuint compileAndLinkShader(const std::string& s, GLenum type);
 std::string preprocessIncludes(const std::string source, const std::string shader_path, int level);
-void releaseSamplers(int n);

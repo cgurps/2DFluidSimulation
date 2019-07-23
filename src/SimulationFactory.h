@@ -8,9 +8,9 @@
 #include <tuple>
 
 void fillTextureWithFunctor(GLuint tex, 
-    const int width, 
-    const int height, 
-    std::function<std::tuple<float, float, float, float>(int, int)> f);
+    const unsigned width, 
+    const unsigned height, 
+    std::function<std::tuple<float, float, float, float>(unsigned, unsigned)> f);
 
 class SimulationFactory
 {
@@ -33,7 +33,7 @@ class SimulationFactory
   private:
     ProgramOptions *options;
 
-    int globalSizeX, globalSizeY;
+    unsigned globalSizeX, globalSizeY;
 
     GLint copyProgram;
     GLint addSmokeSpotProgram;

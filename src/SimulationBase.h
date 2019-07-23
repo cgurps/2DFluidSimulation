@@ -3,12 +3,14 @@
 
 #include "GLUtils.h"
 #include "ProgramOptions.h"
+#include "GLFWHandler.h"
+#include "SimulationFactory.h"
 
 class SimulationBase
 {
   public:
-    SimulationBase(ProgramOptions *options)
-      : options(options)
+    SimulationBase(ProgramOptions *options, GLFWHandler *handler)
+      : options(options), handler(handler), sFact(SimulationFactory(options))
     {}
 
     ~SimulationBase()
@@ -20,9 +22,11 @@ class SimulationBase
     virtual void AddMultipleSplat(const int nb) = 0;
     virtual void RemoveSplat() = 0;
 
+    ProgramOptions *options;
     GLuint shared_texture;
 
-    ProgramOptions *options;
+    GLFWHandler *handler; 
+    SimulationFactory sFact;
 };
 
 #endif //SIMULATIONBASE_H

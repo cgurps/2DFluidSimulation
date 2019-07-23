@@ -3,27 +3,23 @@
 
 #include "SimulationBase.h"
 #include "SimulationFactory.h"
-#include "GLFWHandler.h"
 
 class Smoke : public SimulationBase
 {
   public:
-    Smoke(ProgramOptions *options)
-      : SimulationBase(options), sFact(SimulationFactory(options)) {}
+    Smoke(ProgramOptions *options, GLFWHandler *handler)
+      : SimulationBase(options, handler) {}
 
     ~Smoke();
 
     void Init() override;
     void Update() override;
 
-    void SetHandler(GLFWHandler* hand);
     void AddSplat() override;
     void AddMultipleSplat(const int nb) override;
     void RemoveSplat() override;
   private:
     int READ = 0, WRITE = 1;
-
-    SimulationFactory sFact;
 
     GLuint velocitiesTexture[4];
     GLuint density[4];
@@ -31,8 +27,6 @@ class Smoke : public SimulationBase
     GLuint divergenceCurlTexture;
     GLuint pressureTexture[2];
     GLuint emptyTexture;
-
-    GLFWHandler* handler;
 };
 
 #endif //SMOKE_H

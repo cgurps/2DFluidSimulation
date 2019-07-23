@@ -1,7 +1,4 @@
-#include <iostream>
-
 #include "ProgramOptions.h"
-
 #include "GLFWHandler.h"
 #include "SimpleFluid.h"
 #include "Smoke.h"
@@ -14,22 +11,18 @@ int main(int argc, char** argv)
 
   GLFWHandler handler(&options);
 
+  /*********** SIMULATION CHOICE ***********/
   SimulationBase *sim;
   switch(options.simType)
   {
     case SPLATS:
     {
-      SimpleFluid *sFluid = new SimpleFluid(&options);
-      sFluid->Init();
-      sFluid->SetHandler(&handler);
-      sim = sFluid;
+      sim = new SimpleFluid(&options, &handler);
       break;
     }
     case SMOKE:
     {
-      Smoke *smoke = new Smoke(&options);
-      smoke->Init();
-      sim = smoke;
+      sim = new Smoke(&options, &handler);
       break;
     }
   }

@@ -3,28 +3,23 @@
 
 #include "SimulationBase.h"
 #include "SimulationFactory.h"
-#include "GLFWHandler.h"
 
 class SimpleFluid : public SimulationBase
 {
   public:
-    SimpleFluid(ProgramOptions *options)
-      : SimulationBase(options), sFact(SimulationFactory(options)) {}
+    SimpleFluid(ProgramOptions *options, GLFWHandler* handler)
+      : SimulationBase(options, handler) {}
 
     ~SimpleFluid();
 
     void Init() override;
     void Update() override;
 
-    void SetHandler(GLFWHandler* hand);
-
     void AddSplat() override;
     void AddMultipleSplat(const int nb) override;
     void RemoveSplat() override;
   private:
     int READ = 0, WRITE = 1;
-
-    SimulationFactory sFact;
 
     bool addSplat = false;
     double sOriginX, sOriginY;
@@ -35,8 +30,6 @@ class SimpleFluid : public SimulationBase
     GLuint divergenceCurlTexture;
     GLuint pressureTexture[2];
     GLuint emptyTexture;
-
-    GLFWHandler* handler;
 };
 
 #endif //SIMPLEFLUID_H

@@ -18,10 +18,10 @@ std::istream& operator>>(std::istream& os, SimulationType& type);
 
 struct ProgramOptions
 {
-  unsigned int windowWidth, windowHeight;
+  unsigned windowWidth, windowHeight;
 
   SimulationType simType;
-  unsigned int simWidth, simHeight;
+  unsigned simWidth, simHeight;
   int RKorder;
   float dt;
 };

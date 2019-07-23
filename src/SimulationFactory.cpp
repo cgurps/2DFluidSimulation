@@ -1,17 +1,17 @@
 #include "SimulationFactory.h"
 
 void fillTextureWithFunctor(GLuint tex, 
-    const int width, 
-    const int height, 
-    std::function<std::tuple<float, float, float, float>(int, int)> f)
+    const unsigned width, 
+    const unsigned height, 
+    std::function<std::tuple<float, float, float, float>(unsigned, unsigned)> f)
 {
   float *data = new float[4 * width * height];
 
-  for(int x = 0; x < width; ++x)
+  for(unsigned x = 0; x < width; ++x)
   {
-    for(int y = 0; y < height; ++y)
+    for(unsigned y = 0; y < height; ++y)
     {
-      const int pos = 4 * (y * width + x);
+      const unsigned pos = 4 * (y * width + x);
 
       auto [r, g, b, a] = f(x, y);
 
@@ -29,10 +29,11 @@ void fillTextureWithFunctor(GLuint tex,
 }
 
 SimulationFactory::SimulationFactory(ProgramOptions *options)
-  : options(options), globalSizeX(options->simWidth / 32), globalSizeY(options->simHeight / 32)
+  : options(options), 
+    globalSizeX(options->simWidth / 32), 
+    globalSizeY(options->simHeight / 32)
 {
   copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
-
   addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
   simpleAdvectProgram = compileAndLinkShader("shaders/simulation/advect.comp", GL_COMPUTE_SHADER); 
   maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
