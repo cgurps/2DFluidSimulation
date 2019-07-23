@@ -119,14 +119,6 @@ float rd()
 
 void SimpleFluid::Update()
 {
-  /*
-  GLint64 startTime, stopTime;
-  GLuint queryID[2];
-
-  // generate two queries
-  glGenQueries(2, queryID);
-  glQueryCounter(queryID[0], GL_TIMESTAMP); 
-
   /********** Adding Splat *********/
   while(nbSplat > 0)
   {
@@ -190,20 +182,4 @@ void SimpleFluid::Update()
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];
-
-  /********** Time Stuff **********/
-  /*
-  glQueryCounter(queryID[1], GL_TIMESTAMP);
-  GLint stopTimerAvailable = 0;
-  while (!stopTimerAvailable) {
-      glGetQueryObjectiv(queryID[1],
-                            GL_QUERY_RESULT_AVAILABLE,
-                            &stopTimerAvailable);
-  }
-  glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
-  glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
-  
-  printf("\r%.3f FPS", 1000.0 / ((stopTime - startTime) / 1000000.0));
-  fflush(stdout);
-  */
 }
