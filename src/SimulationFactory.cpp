@@ -36,6 +36,7 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
   addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
   simpleAdvectProgram = compileAndLinkShader("shaders/simulation/advect.comp", GL_COMPUTE_SHADER); 
   maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
+  RK4Program = compileAndLinkShader("shaders/simulation/RK4.comp", GL_COMPUTE_SHADER);
   divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.comp", GL_COMPUTE_SHADER); 
   jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.comp", GL_COMPUTE_SHADER); 
   pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER); 
@@ -70,10 +71,26 @@ void SimulationFactory::simpleAdvect(const GLuint velocities, const GLuint field
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
+void SimulationFactory::RK4Advect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
+{
+  GL_CHECK( glUseProgram(RK4Program) );
+
+  GLuint location = glGetUniformLocation(RK4Program, "dt");
+  GL_CHECK( glUniform1f(location, dt) );
+  location = glGetUniformLocation(RK4Program, "order");
+  GL_CHECK( glUniform1i(location, options->RKorder) );
+
+  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_READ) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
+  GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
+  GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
+}
+
 void SimulationFactory::mcAdvect(const GLuint velocities, const GLuint *fields, const float dt)
 {
-  simpleAdvect(velocities, fields[0], fields[1],   dt);
-  simpleAdvect(velocities, fields[1], fields[2], - dt);
+  RK4Advect(velocities, fields[0], fields[1],   dt);
+  RK4Advect(velocities, fields[1], fields[2], - dt);
   maccormackStep(velocities, fields[0], fields[2], fields[1], fields[3], dt);
 }
 

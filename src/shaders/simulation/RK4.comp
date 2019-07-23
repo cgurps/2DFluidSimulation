@@ -1,0 +1,58 @@
+#version 450
+
+#include "includes.comp"
+#include "layout_size.comp"
+
+uniform float dt;
+uniform int order;
+
+layout(rgba32f, binding = 0) uniform image2D field_WRITE;
+layout(binding = 1) uniform sampler2D field_READ;
+layout(binding = 2) uniform sampler2D velocities_READ;
+
+void main()
+{
+  vec2 tSize = TEXTURE_SIZE(field_READ);
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  vec2 texCoords = pixelCoords / tSize;
+
+  vec2 v = texelFetch(velocities_READ, pixelCoords, 0).xy;
+
+  if(order == 2)
+  {
+    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
+    v = dt * v1;
+  }
+  else if (order == 3)
+  {
+    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
+    vec2 v2 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v1 / tSize).xy;
+    v = dt * (v + 4.0f * v1 + v2) * (1.0f / 6.0f); 
+  }
+  else
+  {
+    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
+    vec2 v2 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v1 / tSize).xy;
+    vec2 v3 = texture2D_bilinear(velocities_READ, texCoords +        dt * v2 / tSize).xy;
+    v = dt * (v + 2.0f * (v1 + v2) + v3) * (1.0f / 6.0f);
+  }
+
+  vec2 pos = vec2(pixelCoords) - dt * v;
+  vec2 npos = floor(pos + vec2(0.5f, 0.5f));
+  npos = npos / tSize;
+
+  vec2 ht = vec2(0.5f, 0.5f) / tSize;
+
+  vec4 nodeValues[4];
+  nodeValues[0] = texture2D_bilinear(field_READ, npos + vec2(- ht.x, - ht.y));
+  nodeValues[1] = texture2D_bilinear(field_READ, npos + vec2(  ht.x, - ht.y));
+  nodeValues[2] = texture2D_bilinear(field_READ, npos + vec2(- ht.x,   ht.y));
+  nodeValues[3] = texture2D_bilinear(field_READ, npos + vec2(  ht.x,   ht.y));
+
+  vec4 phiMin = min(min(min(nodeValues[0], nodeValues[1]), nodeValues[2]), nodeValues[3]);
+  vec4 phiMax = max(max(max(nodeValues[0], nodeValues[1]), nodeValues[2]), nodeValues[3]);
+
+  vec4 r = clamp(texture2D_bilinear(field_READ, pos / tSize), phiMin, phiMax);
+
+  imageStore(field_WRITE, pixelCoords, r);
+}

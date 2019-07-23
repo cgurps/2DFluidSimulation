@@ -22,6 +22,7 @@ struct ProgramOptions
 
   SimulationType simType;
   unsigned int simWidth, simHeight;
+  int RKorder;
   float dt;
 };
 

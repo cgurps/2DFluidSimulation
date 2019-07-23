@@ -136,8 +136,12 @@ void Smoke::Update()
   sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], options->dt, 0.25f, 0.1f, 15.0f);
 
   /********** Convection **********/
+  sFact.RK4Advect(velocitiesTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE], options->dt);
+  std::swap(velocitiesTexture[0], velocitiesTexture[1]);
+  /*
   sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, options->dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
+  */
 
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
@@ -152,11 +156,20 @@ void Smoke::Update()
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Fields Advection **********/
+  sFact.RK4Advect(velocitiesTexture[READ], density[READ], density[WRITE], options->dt);
+  std::swap(density[0], density[1]);
+  /*
   sFact.mcAdvect(velocitiesTexture[READ], density, options->dt);
   std::swap(density[0], density[3]);
+  */
 
+  sFact.RK4Advect(velocitiesTexture[READ], temperature[READ], temperature[WRITE], options->dt);
+  std::swap(temperature[0], temperature[1]);
+
+  /*
   sFact.mcAdvect(velocitiesTexture[READ], temperature, options->dt);
   std::swap(temperature[0], temperature[3]);
+  */
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];

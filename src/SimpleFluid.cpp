@@ -65,13 +65,13 @@ void SimpleFluid::Init()
   density[1] = createTexture2D(options->simWidth, options->simHeight);
   density[2] = createTexture2D(options->simWidth, options->simHeight);
   density[3] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
+  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f3);
 
   velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[2] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[3] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f);
+  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f1);
 
   divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
   fillTextureWithFunctor(divergenceCurlTexture, options->simWidth, options->simHeight, f);
@@ -156,8 +156,12 @@ void SimpleFluid::Update()
   sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, options->dt);
 
   /********** Convection **********/
+  /*
   sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, options->dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[3]);
+  */
+  sFact.RK4Advect(velocitiesTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE], options->dt);
+  std::swap(velocitiesTexture[0], velocitiesTexture[1]);
 
   /********** Divergence & Curl **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
@@ -175,8 +179,13 @@ void SimpleFluid::Update()
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Fields Advection **********/
+  sFact.RK4Advect(velocitiesTexture[READ], density[READ], density[WRITE], options->dt);
+  std::swap(density[0], density[1]);
+
+  /*
   sFact.mcAdvect(velocitiesTexture[READ], density, options->dt);
   std::swap(density[0], density[3]);
+  */
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];
