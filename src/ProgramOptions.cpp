@@ -44,9 +44,13 @@ ProgramOptions parseOptions(int argc, char* argv[])
   poSim.add_options()
     ("simType,s", po::value<SimulationType>(&options.simType)->default_value(SPLATS), "type of simulation (splats, smoke)")
     ("deltaTime,t", po::value<float>(&options.dt)->default_value(0.1f), "time step for the simulation")
-    ("rk-order", po::value<int>(&options.RKorder)->default_value(4), "order for the runge-kutta integrator")
     ("simWidth", po::value<unsigned>(&options.simWidth)->default_value(1024), "simulation width (must be a power of 2)")
     ("simHeight", po::value<unsigned>(&options.simHeight)->default_value(1024), "simulation height (must be a power of 2)")
+  ;
+
+  po::options_description poIntegrator("Advection integrator options");
+  poIntegrator.add_options()
+    ("rk-order", po::value<int>(&options.RKorder)->default_value(4), "order for the runge-kutta integrator")
   ;
 
   po::options_description po_options("sim [options]");
