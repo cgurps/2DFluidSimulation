@@ -24,6 +24,8 @@ struct ProgramOptions
   unsigned simWidth, simHeight;
   int RKorder;
   float dt;
+
+  bool exportImages;
 };
 
 ProgramOptions parseOptions(int argc, char* argv[]);

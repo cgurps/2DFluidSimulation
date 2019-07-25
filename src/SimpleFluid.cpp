@@ -30,7 +30,7 @@ void SimpleFluid::Init()
         float xf = (float) x - 0.5f * (float) this->options->simWidth;
         float yf = (float) y - 0.5f * (float) this->options->simHeight;
         float norm = std::sqrt(xf * xf + yf * yf);
-        float vx = (y > this->options->simHeight / 2) ? 5.0f : - 5.0f;
+        float vx = (y > this->options->simHeight / 2) ? 15.0f : - 15.0f;
         float vy = (norm < 1e-5) ? 0.0f : 20.0f * xf / norm;
         return std::make_tuple(vx, 0.0f,
                                0.0f, 0.0f);
@@ -45,12 +45,12 @@ void SimpleFluid::Init()
   density[0] = createTexture2D(options->simWidth, options->simHeight);
   density[1] = createTexture2D(options->simWidth, options->simHeight);
   density[2] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
+  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f3);
 
   velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[2] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f);
+  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f1);
 
   divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
   fillTextureWithFunctor(divergenceCurlTexture, options->simWidth, options->simHeight, f);

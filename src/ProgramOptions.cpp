@@ -38,6 +38,7 @@ ProgramOptions parseOptions(int argc, char* argv[])
   poWindow.add_options()
     ("windowWidth", po::value<unsigned>(&options.windowWidth)->default_value(800), "window width")
     ("windowHeight", po::value<unsigned>(&options.windowHeight)->default_value(800), "window height")
+    ("exportImages", po::value<bool>(&options.exportImages)->default_value(false), "export simulation to a set of PNG files")
   ;
 
   po::options_description poSim("Simulation options");

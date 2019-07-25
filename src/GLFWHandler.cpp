@@ -198,48 +198,49 @@ void GLFWHandler::Run()
     GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
     GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
 
-#ifdef EXPORT_IMGS
-    //Saving Images
-    unsigned char *colors = new unsigned char[3 * simulation->width * simulation->height];
-    GL_CHECK(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, colors));
-    buffers.push_back(colors);
-#endif
+    if(options->exportImages)
+    {
+      unsigned char *colors = new unsigned char[3 * options->simWidth * options->simHeight];
+      GL_CHECK(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, colors));
+      buffers.push_back(colors);
+    }
 
     glfwSwapBuffers(window);
   }
 
-#ifdef EXPORT_IMGS
-  auto storeImage = [](const char* path, const unsigned char* colors, unsigned int w, unsigned int h)
+  if(options->exportImages)
   {
-    std::cout << "Storing " << path << std::endl;
-
-    unsigned char reversed[3 * w * h];
-    for(unsigned int x = 0; x < w; ++x)
+    auto storeImage = [](const char* path, const unsigned char* colors, unsigned int w, unsigned int h)
     {
-      for(unsigned int y = 0; y < h; ++y)
+      std::cout << "Storing " << path << std::endl;
+
+      unsigned char reversed[3 * w * h];
+      for(unsigned int x = 0; x < w; ++x)
       {
-        reversed[3 * (y * w + x)] = colors[ 3 * ( (h - y - 1) * w + x )];
-        reversed[3 * (y * w + x) + 1] = colors[3 * ( (h - y - 1) * w + x ) + 1];
-        reversed[3 * (y * w + x) + 2] = colors[3 * ( (h - y - 1) * w + x ) + 2];
+        for(unsigned int y = 0; y < h; ++y)
+        {
+          reversed[3 * (y * w + x)] = colors[ 3 * ( (h - y - 1) * w + x )];
+          reversed[3 * (y * w + x) + 1] = colors[3 * ( (h - y - 1) * w + x ) + 1];
+          reversed[3 * (y * w + x) + 2] = colors[3 * ( (h - y - 1) * w + x ) + 2];
+        }
       }
+
+      unsigned error = lodepng_encode24_file(path, reversed, w, h);
+      if(error) std::cout << "Encode Error: " << error << ": " << lodepng_error_text(error) << std::endl;
+      delete [] colors;
+    };
+
+    for(unsigned int i = 0; i < buffers.size(); ++i)
+    {
+      char path[1024];
+      if(i < 10)
+        sprintf(path, "frame_00%i.png", i);
+      else if (i < 100)
+        sprintf(path, "frame_0%i.png", i);
+      else
+        sprintf(path, "frame_%i.png", i); 
+
+      storeImage(path, buffers[i], options->simWidth, options->simHeight);
     }
-
-    unsigned error = lodepng_encode24_file(path, reversed, w, h);
-    if(error) std::cout << "Encode Error: " << error << ": " << lodepng_error_text(error) << std::endl;
-    delete [] colors;
-  };
-
-  for(unsigned int i = 0; i < buffers.size(); ++i)
-  {
-    char path[1024];
-    if(i < 10)
-      sprintf(path, "frame_00%i.png", i);
-    else if (i < 100)
-      sprintf(path, "frame_0%i.png", i);
-    else
-      sprintf(path, "frame_%i.png", i); 
-
-    storeImage(path, buffers[i], options->simWidth, options->simHeight);
   }
-#endif
 }
