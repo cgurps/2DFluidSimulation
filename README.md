@@ -1,7 +1,6 @@
 <p align="center">
-  <img width="250" height="250" src="images/simple_fluid.png">
-  <img width="250" height="250" src="images/splats.png">
-  <img width="250" height="250" src="images/smoke.png">
+  <img width="350" height="350" src="images/splats.png">
+  <img width="350" height="350" src="images/smoke.png">
 </p>
 
 # 2D Fluid Simulator using OpenGL
