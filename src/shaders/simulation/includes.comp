@@ -37,3 +37,21 @@ vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
   vec4 tB = mix( bl, br, f.x );
   return mix( tA, tB, f.y );
 }
+
+vec4 clampValue(in sampler2D t, in vec4 value, in vec2 uv)
+{
+  vec2 tSize = TEXTURE_SIZE(t);
+  vec2 texelSize = vec2(1.0f / tSize.x, 1.0f / tSize.y);
+
+  vec2 f = fract( uv * tSize );
+  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
+  vec4 a = TEXTURE_2D(t, uv);
+  vec4 b = TEXTURE_2D(t, uv + vec2(texelSize.x, 0.0));
+  vec4 c = TEXTURE_2D(t, uv + vec2(0.0, texelSize.y));
+  vec4 d = TEXTURE_2D(t, uv + vec2(texelSize.x, texelSize.y));
+ 
+  vec4 phiMin = min(min(min(a, b), c), d);
+  vec4 phiMax = max(max(max(a, b), c), d);
+
+  return clamp(value, phiMin, phiMax);  
+}

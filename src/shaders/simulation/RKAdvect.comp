@@ -38,21 +38,8 @@ void main()
   }
 
   vec2 pos = vec2(pixelCoords) - dt * v;
-  vec2 npos = floor(pos + vec2(0.5f, 0.5f));
-  npos = npos / tSize;
+  vec4 val = texture2D_bilinear(field_READ, pos / tSize);
+  val = clampValue(field_READ, val, pos / tSize); 
 
-  vec2 ht = vec2(0.5f, 0.5f) / tSize;
-
-  vec4 nodeValues[4];
-  nodeValues[0] = texture2D_bilinear(field_READ, npos + vec2(- ht.x, - ht.y));
-  nodeValues[1] = texture2D_bilinear(field_READ, npos + vec2(  ht.x, - ht.y));
-  nodeValues[2] = texture2D_bilinear(field_READ, npos + vec2(- ht.x,   ht.y));
-  nodeValues[3] = texture2D_bilinear(field_READ, npos + vec2(  ht.x,   ht.y));
-
-  vec4 phiMin = min(min(min(nodeValues[0], nodeValues[1]), nodeValues[2]), nodeValues[3]);
-  vec4 phiMax = max(max(max(nodeValues[0], nodeValues[1]), nodeValues[2]), nodeValues[3]);
-
-  vec4 r = clamp(texture2D_bilinear(field_READ, pos / tSize), phiMin, phiMax);
-
-  imageStore(field_WRITE, pixelCoords, r);
+  imageStore(field_WRITE, pixelCoords, val);
 }

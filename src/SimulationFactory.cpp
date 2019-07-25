@@ -35,9 +35,8 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
 {
   copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
   addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
-  simpleAdvectProgram = compileAndLinkShader("shaders/simulation/advect.comp", GL_COMPUTE_SHADER); 
   maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
-  RK4Program = compileAndLinkShader("shaders/simulation/RK4.comp", GL_COMPUTE_SHADER);
+  RKProgram = compileAndLinkShader("shaders/simulation/RKAdvect.comp", GL_COMPUTE_SHADER);
   divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.comp", GL_COMPUTE_SHADER); 
   jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.comp", GL_COMPUTE_SHADER); 
   pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER); 
@@ -58,27 +57,13 @@ void SimulationFactory::copy(const GLuint in, const GLuint out)
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }
 
-void SimulationFactory::simpleAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
+void SimulationFactory::RKAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
 {
-  GL_CHECK( glUseProgram(simpleAdvectProgram) );
+  GL_CHECK( glUseProgram(RKProgram) );
 
-  GLuint location = glGetUniformLocation(simpleAdvectProgram, "dt");
+  GLuint location = glGetUniformLocation(RKProgram, "dt");
   GL_CHECK( glUniform1f(location, dt) );
-
-  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_READ) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
-  GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
-  GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
-}
-
-void SimulationFactory::RK4Advect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
-{
-  GL_CHECK( glUseProgram(RK4Program) );
-
-  GLuint location = glGetUniformLocation(RK4Program, "dt");
-  GL_CHECK( glUniform1f(location, dt) );
-  location = glGetUniformLocation(RK4Program, "order");
+  location = glGetUniformLocation(RKProgram, "order");
   GL_CHECK( glUniform1i(location, options->RKorder) );
 
   GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
@@ -90,23 +75,18 @@ void SimulationFactory::RK4Advect(const GLuint velocities, const GLuint field_RE
 
 void SimulationFactory::mcAdvect(const GLuint velocities, const GLuint *fields, const float dt)
 {
-  RK4Advect(velocities, fields[0], fields[1],   dt);
-  RK4Advect(velocities, fields[1], fields[2], - dt);
-  maccormackStep(velocities, fields[0], fields[2], fields[1], fields[3], dt);
+  RKAdvect(velocities, fields[0], fields[1],   dt);
+  RKAdvect(velocities, fields[1], fields[2], - dt);
+  maccormackStep(fields[0], fields[1], fields[2]);
 }
 
-void SimulationFactory::maccormackStep(const GLuint velocities, const GLuint field_n_READ, const GLuint field_n_hat_READ, const GLuint field_n_1_hat_READ, const GLuint field_WRITE, const float dt)
+void SimulationFactory::maccormackStep(const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat)
 {
   GL_CHECK( glUseProgram(maccormackProgram) );
 
-  GLuint location = glGetUniformLocation(maccormackProgram, "dt");
-  GL_CHECK( glUniform1f(location, dt) );
-
-  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_READ) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_hat_READ) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE3) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_1_hat_READ) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE4) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
+  GL_CHECK( glBindImageTexture(0, field_n, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_hat) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_1) );
   GL_CHECK( glDispatchCompute(globalSizeX, globalSizeY, 1) );
   GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
 }

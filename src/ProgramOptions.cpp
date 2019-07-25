@@ -54,7 +54,7 @@ ProgramOptions parseOptions(int argc, char* argv[])
   ;
 
   po::options_description po_options("sim [options]");
-  po_options.add(poWindow).add(poSim).add_options()
+  po_options.add(poWindow).add(poSim).add(poIntegrator).add_options()
     ("help,h", "display this message")
   ;
 
