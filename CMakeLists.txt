@@ -3,7 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
 PROJECT(Simulation)
 
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 SET(OpenGL_GL_PREFERENCE "GLVND")
 FIND_PACKAGE( OpenGL REQUIRED )
@@ -21,17 +20,13 @@ ADD_SUBDIRECTORY("libs/glfw")
 FIND_PACKAGE(Boost COMPONENTS regex program_options REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
+FILE(GLOB toCompile
+  "src/*.cpp"
+  "src/*.c")
+
 ADD_EXECUTABLE(
     sim
-    src/main.cpp
-    src/GLFWHandler.cpp
-    src/glad.c
-    src/SimpleFluid.cpp
-    src/GLUtils.cpp
-    src/SimulationFactory.cpp
-    src/Smoke.cpp
-    src/lodepng.cpp
-    src/ProgramOptions.cpp
+    ${toCompile}
 )
 
 TARGET_LINK_LIBRARIES(sim
