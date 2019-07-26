@@ -42,6 +42,7 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
   pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER); 
   applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.comp", GL_COMPUTE_SHADER); 
   applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.comp", GL_COMPUTE_SHADER); 
+  waterContinuityProgram = compileAndLinkShader("shaders/simulation/waterContinuity.comp", GL_COMPUTE_SHADER);
 }
 
 SimulationFactory::~SimulationFactory()

@@ -1,0 +1,28 @@
+#version 450
+
+#include "includes.comp"
+#include "layout_size.comp"
+
+layout(rgba32f, binding = 0) uniform image2D qTex;
+layout(binding = 1) uniform sampler2D pressure;
+layout(binding = 2) uniform sampler2D pTemp;
+
+void main()
+{
+  vec2 tSize = TEXTURE_SIZE(pressure);
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+  float p = texelFetch(pressure, pixelCoords, 0).x;
+  float theta = texelFetch(pTemp, pixelCoords, 0).x;
+  float t = pow(101325.0 / p, 0.286) / theta;
+  vec4 q = imageLoad(qTex, pixelCoords);
+
+  float qvs = (380.16 / p) * exp(17.67 * t / (t + 243.5));
+
+  float deltaQ = min(qvs - q.x, q.y);
+  
+  q.x += deltaQ;
+  q.y -= deltaQ;
+
+  imageStore(qTex, pixelCoords, q);
+}

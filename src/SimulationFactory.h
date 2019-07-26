@@ -44,6 +44,7 @@ class SimulationFactory
     GLint pressureProjectionProgram;
     GLint applyVorticityProgram;
     GLint applyBuoyantForceProgram;
+    GLint waterContinuityProgram;
 };
 
 #endif //SIMULATIONFACTORY_H
