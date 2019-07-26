@@ -12,6 +12,9 @@ std::ostream& operator<<(std::ostream& os, const SimulationType& type)
     case SMOKE:
       os << "smoke";
       break;
+    case CLOUDS:
+      os << "clouds";
+      break;
   }
 
   return os;
@@ -23,6 +26,7 @@ std::istream& operator>>(std::istream& is, SimulationType& type)
   is >> token;
   if(token == "splats") { type = SPLATS; return is; }
   if(token == "smoke")  { type = SMOKE; return is; }
+  if(token == "clouds")  { type = CLOUDS; return is; }
 
   throw std::invalid_argument("bad simulation");
   return is;

@@ -10,7 +10,8 @@
 enum SimulationType
 {
   SPLATS,
-  SMOKE
+  SMOKE,
+  CLOUDS
 };
 
 std::ostream& operator<<(std::ostream& os, const SimulationType& type);

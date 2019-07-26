@@ -2,6 +2,7 @@
 #include "GLFWHandler.h"
 #include "SimpleFluid.h"
 #include "Smoke.h"
+#include "Clouds.h"
 
 int main(int argc, char** argv)
 {
@@ -23,6 +24,11 @@ int main(int argc, char** argv)
     case SMOKE:
     {
       sim = new Smoke(&options, &handler);
+      break;
+    }
+    case CLOUDS:
+    {
+      sim = new Clouds(&options, &handler);
       break;
     }
   }

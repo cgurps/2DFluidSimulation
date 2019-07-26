@@ -114,20 +114,24 @@ void SimpleFluid::Update()
     sOriginY = sY;
   }
 
-  /********** Vorticity **********/
-  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture, options->dt);
-
   /********** Convection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture, options->dt);
+  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture);
   std::swap(velocitiesTexture[0], velocitiesTexture[2]);
 
+  /********** Field Advection **********/
+  sFact.mcAdvect(velocitiesTexture[READ], density);
+  std::swap(density[0], density[2]);
+
+  /********** Vorticity **********/
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
+  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
+  
   /********** Divergence & Curl **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
 
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
-  for(int k = 0; k < 30; ++k)
+  for(int k = 0; k < 45; ++k)
   {
     sFact.solvePressure(divergenceCurlTexture, pressureTexture[READ], pressureTexture[WRITE]);
     std::swap(pressureTexture[READ], pressureTexture[WRITE]);
@@ -136,10 +140,6 @@ void SimpleFluid::Update()
   /********** Pressure Projection **********/
   sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
-
-  /********** Fields Advection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], density, options->dt);
-  std::swap(density[0], density[2]);
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];

@@ -16,8 +16,10 @@ void main()
   ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
   vec2 texCoords = pixelCoords / tSize;
 
+  //vec2 v = TEXTURE_2D(velocities_READ, texCoords).xy;
   vec2 v = texelFetch(velocities_READ, pixelCoords, 0).xy;
 
+  /*
   if(order == 2)
   {
     vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
@@ -36,10 +38,11 @@ void main()
     vec2 v3 = texture2D_bilinear(velocities_READ, texCoords +        dt * v2 / tSize).xy;
     v = dt * (v + 2.0f * (v1 + v2) + v3) * (1.0f / 6.0f);
   }
+  */
 
   vec2 pos = vec2(pixelCoords) - dt * v;
   vec4 val = texture2D_bilinear(field_READ, pos / tSize);
-  val = clampValue(field_READ, val, pos / tSize); 
+  //val = clampValue(field_READ, val, pos / tSize); 
 
   imageStore(field_WRITE, pixelCoords, val);
 }

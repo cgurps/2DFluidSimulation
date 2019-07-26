@@ -1,4 +1,4 @@
-#include "Smoke.h"
+#include "Clouds.h"
 #include "GLUtils.h"
 
 #include <string>
@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cmath>
 
-Smoke::~Smoke()
+Clouds::~Clouds()
 {
   GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
   GL_CHECK( glDeleteTextures(4, density) );
@@ -15,24 +15,35 @@ Smoke::~Smoke()
   GL_CHECK( glDeleteTextures(1, &emptyTexture) );
 }
 
-void Smoke::Init()
+void Clouds::Init()
 {
   /********** Texture Initilization **********/
   auto f = [](unsigned, unsigned)
       {
-        return std::make_tuple(0.0f, 0.0f,
-                               0.0f, 0.0f);
+        return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+      };  
+
+  auto f1 = [](unsigned, unsigned y)
+      {
+        if(y <= 5) return std::make_tuple(1.0f, 0.0f, 0.0f, 0.0f);
+        else return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
+      };
+
+  auto f2 = [](unsigned, unsigned y)
+      {
+        if(y <= 5) return std::make_tuple(20.0f, 0.0f, 0.0f, 0.0f);
+        else return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
       };
 
   density[0] = createTexture2D(options->simWidth, options->simHeight);
   density[1] = createTexture2D(options->simWidth, options->simHeight);
   density[2] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
+  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f1);
 
-  temperature[0] = createTexture2D(options->simWidth, options->simHeight);
-  temperature[1] = createTexture2D(options->simWidth, options->simHeight);
-  temperature[2] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(temperature[0], options->simWidth, options->simHeight, f);
+  potentialTemperature[0] = createTexture2D(options->simWidth, options->simHeight);
+  potentialTemperature[1] = createTexture2D(options->simWidth, options->simHeight);
+  potentialTemperature[2] = createTexture2D(options->simWidth, options->simHeight);
+  fillTextureWithFunctor(potentialTemperature[0], options->simWidth, options->simHeight, f2);
 
   velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
@@ -50,21 +61,21 @@ void Smoke::Init()
   fillTextureWithFunctor(emptyTexture, options->simWidth, options->simHeight, f);
 }
 
-void Smoke::AddSplat()
+void Clouds::AddSplat()
 {
 }
 
-void Smoke::AddMultipleSplat(const int)
+void Clouds::AddMultipleSplat(const int)
 {
 }
 
-void Smoke::RemoveSplat()
+void Clouds::RemoveSplat()
 {
 }
 
-void Smoke::Update()
+void Clouds::Update()
 {
-  /********** Adding Smoke Origin *********/
+  /********** Adding Clouds Origin *********/
   auto rd = []() -> double
   {
     return (double) rand() / (double) RAND_MAX;
@@ -72,9 +83,24 @@ void Smoke::Update()
 
   int x = options->simWidth / 2; int y = 75;
 
+  /*
   sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.12f, 0.31f, 0.7f), 1.0f);
-  sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 8.0f);
+  sFact.addSplat(potentialTemperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 8.0f);
   sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(2.0f * rd() - 1.0f, 0.0f, 0.0f), 75.0f);
+  */
+
+  /********** Convection **********/
+  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture);
+  std::swap(velocitiesTexture[0], velocitiesTexture[2]);
+
+  /********** Advections **********/
+  sFact.mcAdvect(velocitiesTexture[READ], density);
+  std::swap(density[0], density[2]);
+  sFact.mcAdvect(velocitiesTexture[READ], potentialTemperature);
+  std::swap(potentialTemperature[0], potentialTemperature[2]);
+
+  /********** Buoyant Force **********/
+  sFact.applyBuoyantForce(velocitiesTexture[READ], potentialTemperature[READ], density[READ], 0.25f, 0.1f, 15.0f);
 
   /********** Divergence & Curl **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
@@ -82,12 +108,8 @@ void Smoke::Update()
   /********** Vorticity **********/
   sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
 
-  /********** Buoyant Force **********/
-  sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], 0.25f, 0.1f, 15.0f);
-
-  /********** Convection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture);
-  std::swap(velocitiesTexture[0], velocitiesTexture[2]);
+  /********** Updating Thermodynamics *********/
+  sFact.updateQAndTheta(density[READ], potentialTemperature);
 
   /********** Poisson Solving with Jacobi **********/
   sFact.copy(emptyTexture, pressureTexture[READ]);
@@ -100,12 +122,6 @@ void Smoke::Update()
   /********** Pressure Projection **********/
   sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
-
-  /********** Fields Advection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], density);
-  std::swap(density[0], density[2]);
-  sFact.mcAdvect(velocitiesTexture[READ], temperature);
-  std::swap(temperature[0], temperature[2]);
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];
