@@ -37,12 +37,16 @@ ADD_EXECUTABLE(
 TARGET_LINK_LIBRARIES(sim
     glfw
     OpenGL::GL
-    ${CMAKE_DL_LIBS}
     ${Boost_LIBRARIES}
     ${Boost_REGEX_LIBRARY}
     )
 
+IF(NOT WIN32)
+  TARGET_LINK_LIBRARIES(sim
+    ${CMAKE_DL_LIBS}
+    )
+ENDIF(NOT WIN32)
+
 ADD_CUSTOM_COMMAND(TARGET sim POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/kernels ${CMAKE_BINARY_DIR}/kernels
-  COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/shaders ${CMAKE_BINARY_DIR}/shaders
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/shaders ${CMAKE_BINARY_DIR}/shaders
   )
