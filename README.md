@@ -8,7 +8,16 @@
 This project is an implementation of an eulerian fluid simulation on GPU using OpenGL 4.3 compute shaders capabilities.
 
 ## Getting Started
-You will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [GLFW](https://www.glfw.org/) and [Boost](https://www.boost.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
+You will first need to clone the repository
+```
+git clone https://github.com/cgurps/2DFluidSimulation.git [PROJECT_FOLDER]
+```
+and then init the submodules
+```
+cd [PROJECT_FOLDER]
+git submodule update --init
+```
+To compile the project, you will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [GLFW](https://www.glfw.org/) and [Boost](https://www.boost.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
 
 ```
 mkdir build
@@ -24,8 +33,12 @@ We solve the Navier-Stokes equation for incompressible fluids:
 <p align="center">
   <img src="images/equations/NS.png">
 </p>
-
-As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. The simulation is breaked down into an advection step using a [Maccormack](http://physbam.stanford.edu/~fedkiw/papers/stanford2006-09.pdf) scheme and a poisson equation of the Helmholtz decomposition (using a Jacobi method) to make the fluid divergence free. The simulation also contains the vorticity confinement method (which computes the curl of the velocity field and then add the forces to it).
+As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. 
+The advection step uses a semi-Lagragian approach. The particle position is computed using a [Runge Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) method of order 4. The next step adds forces to the velocity field (such as vorticity confinement or buoyancy). After that, the intermediate field is made incompressible using a projection method based on the Helmholtz-Hodge decomposition. I solve the associated poisson equation using the [Jacobi](https://en.wikipedia.org/wiki/Jacobi_method) method. The time step is computed at each iteration with
+<p align="center">
+  <img src="images/equations/CFL.png">
+</p>
+The maximum of the velocity field is computed through a reduce method on the GPU.
 
 ## Implementation
 Each quantities is represented by a texture of 16bits floating points on the GPU. For exact texels query, I use the texelFetch method (which runs faster than using texture2D) and then handle the boundary cases by hand. The bilinear interpolation for the advection step is also computed by hand for better accuracy. The implementation contains three main classes:
