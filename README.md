@@ -33,9 +33,7 @@ We solve the Navier-Stokes equation for incompressible fluids:
 <p align="center">
   <img src="images/equations/NS.png">
 </p>
-As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. 
-The advection step uses a semi-Lagragian approach. The particle position is computed using a [Runge Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) method of order 4. The next step adds forces to the velocity field (such as vorticity confinement or buoyancy). After that, the intermediate field is made incompressible using a projection method based on the Helmholtz-Hodge decomposition. I solve the associated poisson equation using the 
-[Jacobi](https://en.wikipedia.org/wiki/Jacobi_method) method. The time step is computed at each iteration with
+As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. The advection step uses a semi-Lagragian approach. The particle position is computed using a Runge Kutta method of order 4. The next step adds forces to the velocity field (such as vorticity confinement or buoyancy). After that, the intermediate field is made incompressible using a projection method based on the Helmholtz-Hodge decomposition. I solve the associated poisson equation using the Jacobi method. The time step is computed at each iteration with
 <p align="center">
   <img src="images/equations/CFL.png">
 </p>
