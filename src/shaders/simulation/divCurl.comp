@@ -20,10 +20,10 @@ void main()
   vec2 fieldT = texelFetchOffset(velocities_READ, pixelCoords, 0,   dy).xy;
 
   vec2 fieldC = texelFetch(velocities_READ, pixelCoords, 0).xy;
-  if(pixelCoords.x == 0) fieldL = - fieldC;
-  if(pixelCoords.y == 0) fieldB = - fieldC;
-  if(pixelCoords.x >= tSize.x - 1) fieldR = - fieldC;
-  if(pixelCoords.y >= tSize.y - 1) fieldT = - fieldC;
+  if(pixelCoords.x == 0) fieldL.x = - fieldC.x;
+  if(pixelCoords.y == 0) fieldB.y = - fieldC.y;
+  if(pixelCoords.x >= tSize.x - 1) fieldR.x = - fieldC.x;
+  if(pixelCoords.y >= tSize.y - 1) fieldT.y = - fieldC.y;
 
   float div = 0.5f * (fieldR.x - fieldL.x + fieldT.y - fieldB.y);
   float curl = 0.5f * (fieldR.y - fieldL.y - fieldT.x + fieldB.x);

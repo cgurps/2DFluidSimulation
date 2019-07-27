@@ -3,8 +3,7 @@
 #include "includes.comp"
 #include "layout_size.comp"
 
-uniform float dt;
-uniform int order;
+layout(location = 0) uniform float dt;
 
 layout(rgba32f, binding = 0) uniform image2D field_WRITE;
 layout(binding = 1) uniform sampler2D field_READ;
@@ -13,36 +12,11 @@ layout(binding = 2) uniform sampler2D velocities_READ;
 void main()
 {
   vec2 tSize = TEXTURE_SIZE(field_READ);
-  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  vec2 texCoords = pixelCoords / tSize;
+  vec2 pixelCoords = gl_GlobalInvocationID.xy;
 
-  //vec2 v = TEXTURE_2D(velocities_READ, texCoords).xy;
-  vec2 v = texelFetch(velocities_READ, pixelCoords, 0).xy;
+  vec2 v = RK(velocities_READ, pixelCoords, dt);
+  vec2 pos = pixelCoords - dt * v;
+  vec4 val = TEXTURE_2D(field_READ, pixelToTexel(pos, tSize));
 
-  /*
-  if(order == 2)
-  {
-    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
-    v = dt * v1;
-  }
-  else if (order == 3)
-  {
-    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
-    vec2 v2 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v1 / tSize).xy;
-    v = dt * (v + 4.0f * v1 + v2) * (1.0f / 6.0f); 
-  }
-  else
-  {
-    vec2 v1 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v  / tSize).xy;
-    vec2 v2 = texture2D_bilinear(velocities_READ, texCoords + 0.5f * dt * v1 / tSize).xy;
-    vec2 v3 = texture2D_bilinear(velocities_READ, texCoords +        dt * v2 / tSize).xy;
-    v = dt * (v + 2.0f * (v1 + v2) + v3) * (1.0f / 6.0f);
-  }
-  */
-
-  vec2 pos = vec2(pixelCoords) - dt * v;
-  vec4 val = texture2D_bilinear(field_READ, pos / tSize);
-  //val = clampValue(field_READ, val, pos / tSize); 
-
-  imageStore(field_WRITE, pixelCoords, val);
+  imageStore(field_WRITE, ivec2(pixelCoords), val);
 }

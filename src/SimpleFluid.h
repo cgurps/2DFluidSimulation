@@ -25,8 +25,8 @@ class SimpleFluid : public SimulationBase
     double sOriginX, sOriginY;
     int nbSplat = 0;
 
-    GLuint velocitiesTexture[3];
-    GLuint density[3];
+    GLuint velocitiesTexture[2];
+    GLuint density[2];
     GLuint divergenceCurlTexture;
     GLuint pressureTexture[2];
     GLuint emptyTexture;

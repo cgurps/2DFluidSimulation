@@ -21,37 +21,58 @@
 
 #endif
 
-//https://community.khronos.org/t/manual-bilinear-filter/58504/7
+vec2 pixelToTexel(in vec2 p, in vec2 tSize)
+{
+  return (p + 0.5) / tSize;
+}
+
+//https://www.iquilezles.org/www/articles/hwinterpolation/hwinterpolation.htm
 vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
 {
-  vec2 tSize = TEXTURE_SIZE(t);
-  vec2 texelSize = vec2(1.0f / tSize.x, 1.0f / tSize.y);
+  vec2 res = TEXTURE_SIZE( t );
 
-  vec2 f = fract( uv * tSize );
-  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
-  vec4 tl = TEXTURE_2D(t, uv);
-  vec4 tr = TEXTURE_2D(t, uv + vec2(texelSize.x, 0.0));
-  vec4 bl = TEXTURE_2D(t, uv + vec2(0.0, texelSize.y));
-  vec4 br = TEXTURE_2D(t, uv + vec2(texelSize.x, texelSize.y));
-  vec4 tA = mix( tl, tr, f.x );
-  vec4 tB = mix( bl, br, f.x );
-  return mix( tA, tB, f.y );
+  vec2 st = uv*res - 0.5;
+
+  vec2 iuv = floor( st );
+  vec2 fuv = fract( st );
+
+  vec4 a = TEXTURE_2D( t, (iuv+vec2(0.5,0.5))/res );
+  vec4 b = TEXTURE_2D( t, (iuv+vec2(1.5,0.5))/res );
+  vec4 c = TEXTURE_2D( t, (iuv+vec2(0.5,1.5))/res );
+  vec4 d = TEXTURE_2D( t, (iuv+vec2(1.5,1.5))/res );
+
+  return mix( mix( a, b, fuv.x),
+                      mix( c, d, fuv.x), fuv.y );
 }
 
 vec4 clampValue(in sampler2D t, in vec4 value, in vec2 uv)
 {
+  vec2 res = TEXTURE_SIZE( t );
+
+  vec2 st = uv*res - 0.5;
+
+  vec2 iuv = floor( st );
+  vec2 fuv = fract( st );
+
+  vec4 a = TEXTURE_2D( t, (iuv+vec2(0.5,0.5))/res );
+  vec4 b = TEXTURE_2D( t, (iuv+vec2(1.5,0.5))/res );
+  vec4 c = TEXTURE_2D( t, (iuv+vec2(0.5,1.5))/res );
+  vec4 d = TEXTURE_2D( t, (iuv+vec2(1.5,1.5))/res );
+
+  vec4 vMin = min(min(min(a, b), c), d);
+  vec4 vMax = max(max(max(a, b), c), d);
+
+  return clamp(value, vMin, vMax);
+}
+
+vec2 RK(in sampler2D t, in vec2 pos, in float dt)
+{
   vec2 tSize = TEXTURE_SIZE(t);
-  vec2 texelSize = vec2(1.0f / tSize.x, 1.0f / tSize.y);
 
-  vec2 f = fract( uv * tSize );
-  uv += ( .5 - f ) * texelSize;    // move uv to texel centre
-  vec4 a = TEXTURE_2D(t, uv);
-  vec4 b = TEXTURE_2D(t, uv + vec2(texelSize.x, 0.0));
-  vec4 c = TEXTURE_2D(t, uv + vec2(0.0, texelSize.y));
-  vec4 d = TEXTURE_2D(t, uv + vec2(texelSize.x, texelSize.y));
- 
-  vec4 phiMin = min(min(min(a, b), c), d);
-  vec4 phiMax = max(max(max(a, b), c), d);
+  vec2 v1 = TEXTURE_2D(t, pixelToTexel(pos, tSize)).xy;
+  vec2 v2 = TEXTURE_2D(t, pixelToTexel(pos + 0.5 * v1 * dt, tSize)).xy;
+  vec2 v3 = TEXTURE_2D(t, pixelToTexel(pos + 0.5 * v2 * dt, tSize)).xy;
+  vec2 v4 = TEXTURE_2D(t, pixelToTexel(pos + v3 * dt, tSize)).xy;
 
-  return clamp(value, phiMin, phiMax);  
+  return (v1 + 2.0 * (v2 + v3) + v4) * (1.0 / 6.0);
 }

@@ -44,12 +44,10 @@ void SimpleFluid::Init()
 
   density[0] = createTexture2D(options->simWidth, options->simHeight);
   density[1] = createTexture2D(options->simWidth, options->simHeight);
-  density[2] = createTexture2D(options->simWidth, options->simHeight);
   fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
 
   velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
-  velocitiesTexture[2] = createTexture2D(options->simWidth, options->simHeight);
   fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f);
 
   divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
@@ -95,7 +93,7 @@ void SimpleFluid::Update()
     int x = std::clamp(static_cast<unsigned int>(options->simWidth * rd()), 50u, options->simWidth - 50);
     int y = std::clamp(static_cast<unsigned int>(options->simHeight * rd()), 50u, options->simHeight - 50);
     sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(100.0f * rd() - 50.0f, 100.0f * rd() - 50.0f, 0.0f), 75.0f);
-    sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 8.0f);
+    sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 5.0f);
 
     --nbSplat;
   }
@@ -108,30 +106,27 @@ void SimpleFluid::Update()
     sX = (double) options->simWidth * sX / (double) options->windowWidth;
     sY = (double) options->simHeight * (1.0 - sY / (double) options->windowHeight);
     sFact.addSplat(velocitiesTexture[READ], std::make_tuple(sX, sY), std::make_tuple(vScale * (sX - sOriginX), vScale * (sY - sOriginY), 0.0f), 40.0f);
-    sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 2.0f);
+    sFact.addSplat(density[READ], std::make_tuple(sX, sY), std::make_tuple(rd(), rd(), rd()), 5.0f);
 
     sOriginX = sX;
     sOriginY = sY;
   }
 
-  /********** Convection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], velocitiesTexture);
-  std::swap(velocitiesTexture[0], velocitiesTexture[2]);
+  float vMax = sFact.maxReduce(velocitiesTexture[READ]);
+  if(vMax > 1e-10f) options->dt = 5.0f / vMax;
 
-  /********** Field Advection **********/
-  sFact.mcAdvect(velocitiesTexture[READ], density);
-  std::swap(density[0], density[2]);
+  /********** Convection **********/
+  sFact.RKAdvect(velocitiesTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE], options->dt);
+  std::swap(velocitiesTexture[0], velocitiesTexture[1]);
 
   /********** Vorticity **********/
   sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
   sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
   
-  /********** Divergence & Curl **********/
-  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-
   /********** Poisson Solving with Jacobi **********/
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
   sFact.copy(emptyTexture, pressureTexture[READ]);
-  for(int k = 0; k < 45; ++k)
+  for(int k = 0; k < 40; ++k)
   {
     sFact.solvePressure(divergenceCurlTexture, pressureTexture[READ], pressureTexture[WRITE]);
     std::swap(pressureTexture[READ], pressureTexture[WRITE]);
@@ -140,6 +135,10 @@ void SimpleFluid::Update()
   /********** Pressure Projection **********/
   sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
+
+  /********** Field Advection **********/
+  sFact.RKAdvect(velocitiesTexture[READ], density[READ], density[WRITE], options->dt);
+  std::swap(density[0], density[1]);
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];

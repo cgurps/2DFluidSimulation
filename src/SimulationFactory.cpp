@@ -1,4 +1,8 @@
 #include "SimulationFactory.h"
+#include "GLUtils.h"
+
+#include <iostream>
+#include <cmath>
 
 void fillTextureWithFunctor(GLuint tex, 
     const unsigned width, 
@@ -34,6 +38,7 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
     globalSizeY(options->simHeight / 32)
 {
   copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
+  maxReduceProgram = compileAndLinkShader("shaders/simulation/maxReduce.comp", GL_COMPUTE_SHADER);
   addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
   maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
   RKProgram = compileAndLinkShader("shaders/simulation/RKAdvect.comp", GL_COMPUTE_SHADER);
@@ -43,6 +48,17 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
   applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.comp", GL_COMPUTE_SHADER); 
   applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.comp", GL_COMPUTE_SHADER); 
   waterContinuityProgram = compileAndLinkShader("shaders/simulation/waterContinuity.comp", GL_COMPUTE_SHADER);
+
+  /********** Textures for reduce **********/
+  int nb = static_cast<int>(std::log(static_cast<double>(options->simWidth)) / std::log(2.0));
+
+  int tSize = options->simWidth / 2;
+  for(int i = 0; i < nb; ++i)
+  {
+    std::cout << i << " " << tSize << std::endl;
+    reduceTextures.emplace_back(createTexture2D(tSize, tSize)); 
+    tSize /= 2; 
+  }
 }
 
 SimulationFactory::~SimulationFactory()
@@ -64,14 +80,47 @@ void SimulationFactory::copy(const GLuint in, const GLuint out)
   dispatch();
 }
 
+float SimulationFactory::maxReduce(const GLuint tex)
+{
+  auto rUtil = [&](const GLuint iTex, const GLuint oTex, const unsigned size)
+  {
+    GL_CHECK( glUseProgram(maxReduceProgram) ); 
+
+    GL_CHECK( glBindImageTexture(0, oTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
+    GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, iTex) );
+
+    unsigned dSize = std::max(size / 32, 1u);
+
+    GL_CHECK( glDispatchCompute(dSize, dSize, 1) );
+    GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
+  };
+
+  unsigned tSize = options->simWidth / 2;
+  rUtil(tex, reduceTextures[0], tSize);
+  for(unsigned i = 0; i < reduceTextures.size() - 1; ++i)
+  {
+    tSize /= 2;
+    rUtil(reduceTextures[i], reduceTextures[i + 1], tSize);
+  }
+
+  float *data = new float[4];
+  GL_CHECK( glBindTexture(GL_TEXTURE_2D, reduceTextures[reduceTextures.size() - 1]) );
+  GL_CHECK( glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data) );
+
+  using std::max; using std::abs;
+  float m = max(max(max(abs(data[0]), abs(data[1])), abs(data[2])), abs(data[3]));
+
+  delete[] data;
+
+  return m;
+}
+
 void SimulationFactory::RKAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
 {
   GL_CHECK( glUseProgram(RKProgram) );
 
   GLuint location = glGetUniformLocation(RKProgram, "dt");
   GL_CHECK( glUniform1f(location, dt) );
-  location = glGetUniformLocation(RKProgram, "order");
-  GL_CHECK( glUniform1i(location, options->RKorder) );
 
   GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
   GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_READ) );
@@ -82,18 +131,23 @@ void SimulationFactory::RKAdvect(const GLuint velocities, const GLuint field_REA
 
 void SimulationFactory::mcAdvect(const GLuint velocities, const GLuint *fields)
 {
-  RKAdvect(velocities, fields[0], fields[1],   options->dt);
+  RKAdvect(velocities, fields[0], fields[1], options->dt);
   RKAdvect(velocities, fields[1], fields[2], - options->dt);
-  maccormackStep(fields[0], fields[1], fields[2]);
+  maccormackStep(fields[3], fields[0], fields[1], fields[2], velocities);
 }
 
-void SimulationFactory::maccormackStep(const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat)
+void SimulationFactory::maccormackStep(const GLuint field_WRITE, const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat, const GLuint velocities)
 {
   GL_CHECK( glUseProgram(maccormackProgram) );
 
-  GL_CHECK( glBindImageTexture(0, field_n, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_hat) );
-  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_1) );
+  GLuint location = glGetUniformLocation(maccormackProgram, "dt");
+  GL_CHECK( glUniform1f(location, options->dt) );
+
+  GL_CHECK( glBindImageTexture(0, field_WRITE, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE1) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE2) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_hat) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE3) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, field_n_1) );
+  GL_CHECK( glActiveTexture(GL_TEXTURE4) ); GL_CHECK( glBindTexture(GL_TEXTURE_2D, velocities) );
 
   dispatch();
 }

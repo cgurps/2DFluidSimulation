@@ -178,7 +178,7 @@ void GLFWHandler::Run()
     GL_CHECK(glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime));
     GL_CHECK(glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime));
   
-    printf("\r%.3f ms", (stopTime - startTime) / 1000000.0);
+    printf("\r%.3f ms (%.5f dt)", (stopTime - startTime) / 1000000.0, options->dt);
     fflush(stdout);
 
     glfwPollEvents();

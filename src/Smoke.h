@@ -21,9 +21,9 @@ class Smoke : public SimulationBase
   private:
     int READ = 0, WRITE = 1;
 
-    GLuint velocitiesTexture[3];
-    GLuint density[3];
-    GLuint temperature[3];
+    GLuint velocitiesTexture[2];
+    GLuint density[2];
+    GLuint temperature[2];
     GLuint divergenceCurlTexture;
     GLuint pressureTexture[2];
     GLuint emptyTexture;

@@ -20,11 +20,12 @@ class SimulationFactory
     ~SimulationFactory();
 
     void copy(const GLuint in, const GLuint out);
+    float maxReduce(const GLuint tex);
     void addSplat(const GLuint field, const std::tuple<int, int> pos, const std::tuple<float, float, float> color, const float intensity);
     void simpleAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE);
     void RKAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt);
     void mcAdvect(const GLuint velocities, const GLuint *fieldst);
-    void maccormackStep(const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat);
+    void maccormackStep(const GLuint field_WRITE, const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat, const GLuint velocities);
     void divergenceCurl(const GLuint velocities, const GLuint divergence_curl_WRITE);
     void solvePressure(const GLuint divergence_READ, const GLuint pressure_READ, const GLuint pressure_WRITE);
     void pressureProjection(const GLuint pressure_READ, const GLuint velocities_READ, const GLuint velocities_WRITE);
@@ -39,6 +40,7 @@ class SimulationFactory
     unsigned globalSizeX, globalSizeY;
 
     GLint copyProgram;
+    GLint maxReduceProgram;
     GLint addSmokeSpotProgram;
     GLint maccormackProgram;
     GLint RKProgram;
@@ -48,6 +50,8 @@ class SimulationFactory
     GLint applyVorticityProgram;
     GLint applyBuoyantForceProgram;
     GLint waterContinuityProgram;
+
+    std::vector<GLint> reduceTextures;
 };
 
 #endif //SIMULATIONFACTORY_H
