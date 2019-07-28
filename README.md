@@ -47,7 +47,7 @@ Each quantities is represented by a texture of 16bits floating points on the GPU
 
 If you (ever) wish to play around this simulation, you should create a new class that inherits from `SimulationBase` and uses the `SimulationFactory` to compute whatever you need to compute. This new class must overload `Init()`, `Update()`, `AddSplat()`, `AddSplat(const int)` and `RemoveSplat()` for the simulation to work.
 
-# Note on the Jacobi method
+### Note on the Jacobi method
 I implemented a variation on the original Jacobi method described in [Harris et al.](https://users.cg.tuwien.ac.at/bruckner/ss2004/seminar/A3b/Harris2003%20-%20Simulation%20of%20Cloud%20Dynamics%20on%20Graphics%20Hardware.pdf) called the Red-Black Jacobi method. The idea is to pack four values into a single texel. The packing is done both on the divergence and on the pressure values. The next figure (reproduced from the Figure 5 of [Harris et al.](https://users.cg.tuwien.ac.at/bruckner/ss2004/seminar/A3b/Harris2003%20-%20Simulation%20of%20Cloud%20Dynamics%20on%20Graphics%20Hardware.pdf)) shows the process
 <p align="center">
   <img src="images/RB.png">
