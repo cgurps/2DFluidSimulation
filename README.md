@@ -52,7 +52,7 @@ I implemented a variation on the original Jacobi method described in [Harris et 
 <p align="center">
   <img src="images/RB.png">
 </p>
-The resulting texture has half the size of the original one. Then, the Jacobi iteration updates first the black values (which only depend on the red one) and second the red values (using the computed black values). This almost divides the number of texel fetches by two, hence we can obtain the same order of convergence in approximatively half the time! The actual tricky part is to pack the divergence into one texel. This is done in one shader pass by grabing numerous adjacent values of the current texel (see the file `divRB.comp`).
+The resulting texture has half the size of the original one. Then, the Jacobi iteration updates first the black values (which only depend on the red one) and second the red values (using the computed black values). This almost divides the number of texel fetches by two, hence we can obtain the same order of convergence in approximatively half the time! The actual tricky part is to pack the divergence into one texel. This is done in one shader pass by grabing numerous adjacent values of the current texel (see the file <code>divRB.comp</code>).
 
 ## References
 1. [@](http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/): a simple tutorial on fluid simulation
