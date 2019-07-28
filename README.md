@@ -17,7 +17,7 @@ and then init the submodules
 cd [PROJECT_FOLDER]
 git submodule update --init
 ```
-To compile the project, you will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [GLFW](https://www.glfw.org/) and [Boost](https://www.boost.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
+To compile the project, you will need OpenGL with a version above 4.3 in order to get compute shader capabilities. You will also need [Boost](https://www.boost.org/) installed on your machine. To project uses CMake to generate the Makefile needed for the compilation. You can use these commands to build the executable
 
 ```
 mkdir build
