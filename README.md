@@ -57,8 +57,8 @@ The resulting texture has half the size of the original one. Then, the Jacobi it
 ## References
 1. [@](http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/): a simple tutorial on fluid simulation
 2. [@](https://www.cs.ubc.ca/~rbridson/fluidsimulation/fluids_notes.pdf): this awesome books covers a lot of techniques for simulating fluids (classic!)
-3. [@](https://www.cs.cmu.edu/~kmcrane/Projects/GPUFluid/): from GPU gems 3
-4. [@](https://cg.informatik.uni-freiburg.de/intern/seminar/gridFluids_GPU_Gems.pdf): from GPU gems 1
+3. [@](https://cg.informatik.uni-freiburg.de/intern/seminar/gridFluids_GPU_Gems.pdf): 2D fluids from GPU gems 1
+4. [@](https://www.cs.cmu.edu/~kmcrane/Projects/GPUFluid/): 3D fluids from GPU gems 3
 
 ## Nice github projects
 1. [tunabrain/gpu-fluid](https://github.com/tunabrain/gpu-fluid): 2D fluid simulation on the GPU using an hydrid approach (FLIP)
