@@ -23,7 +23,7 @@ To compile the project, you will need OpenGL with a version above 4.3 in order t
 mkdir build
 cd build
 cmake ..
-make
+make -j [YOUR_NUMBER_OF_CORES]
 ```
 
 You can query the program options using `-h`.
