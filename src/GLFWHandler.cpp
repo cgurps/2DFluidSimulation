@@ -2,6 +2,8 @@
 #include "SimulationBase.h"
 #include "lodepng.h"
 
+#include <chrono>
+
 static void glfwErrorCallback(int error, const char* description)
 {
   std::cerr << "Error(" << error << "): " << description << std::endl;
@@ -154,6 +156,10 @@ void GLFWHandler::Run()
   GLint64 startTime, stopTime;
   GLuint queryID[2];
 
+  std::chrono::high_resolution_clock::time_point 
+    start = std::chrono::high_resolution_clock::now();
+  double sumOfDeltaT = 0.0;
+
   /********** SAVING IMAGES **********/
   std::vector<unsigned char*> buffers;
 
@@ -177,8 +183,16 @@ void GLFWHandler::Run()
     }
     GL_CHECK(glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime));
     GL_CHECK(glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime));
+
+    std::chrono::high_resolution_clock::time_point 
+      current = std::chrono::high_resolution_clock::now();
+    sumOfDeltaT += options->dt;
+    std::chrono::duration<double, std::milli> timeSpan = current - start;
   
-    printf("\r%.3f ms (%.5f dt)", (stopTime - startTime) / 1000000.0, options->dt);
+    printf("\rDelta from real time: %.4f s (%.3f ms, %.5f dt)"
+        , sumOfDeltaT - timeSpan.count() / 1000.0
+        , (stopTime - startTime) / 1000000.0
+        , options->dt);
     fflush(stdout);
 
     glfwPollEvents();
