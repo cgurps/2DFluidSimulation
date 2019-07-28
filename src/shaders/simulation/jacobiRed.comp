@@ -1,0 +1,51 @@
+#version 430
+
+#include "includes.comp"
+#include "layout_size.comp"
+
+layout(rgba32f, binding = 0) uniform image2D pressure_WRITE;
+layout(binding = 1) uniform sampler2D pressure_READ;
+layout(binding = 2) uniform sampler2D divergence;
+
+// The divergence and pressure is packed in an half-size texture.
+// This red pass updates the top left and bottom right points (red points)
+// using neighbooring black points.
+
+// 03 ------ 13        23 ------ 33
+// |          |        |          |
+// |  (0, 1)  |        |  (1, 1)  |
+// |          |        |          |
+// 02 ------ 12        22 ------ 32
+//                            
+//                            
+// 01 ------ 11        21 ------ 31
+// |          |        |          |
+// |  (0, 0)  |        |  (1, 0)  |
+// |          |        |          |
+// 00 ------ 10        20 ------ 30
+
+void main()
+{
+  ivec2 tSize = TEXTURE_SIZE(pressure_READ);
+  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  const ivec2 dx = ivec2(1, 0); 
+  const ivec2 dy = ivec2(0, 1);
+
+  vec4 dC = texelFetch(divergence, pixelCoords, 0);
+
+  vec4 pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx);
+  vec4 pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx);
+  vec4 pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy);
+  vec4 pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy);
+
+  vec4 pC = texelFetch(pressure_READ, pixelCoords, 0);
+  if(pixelCoords.x == 0) pL.z = pC.w;
+  if(pixelCoords.y == 0) pB.z = pC.y;
+  if(pixelCoords.x == tSize.x - 1) pR.x = pC.y;
+  if(pixelCoords.y == tSize.y - 1) pT.x = pC.w;
+
+  float g = 0.25 * (pC.x + pR.x + pB.z + pC.z - dC.y);
+  float a = 0.25 * (pL.z + pC.z + pT.x + pC.x - dC.w);
+
+  imageStore(pressure_WRITE, pixelCoords, vec4(pC.x, g, pC.z, a));
+}

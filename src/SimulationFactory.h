@@ -29,11 +29,12 @@ class SimulationFactory
     void divergenceCurl(const GLuint velocities, const GLuint divergence_curl_WRITE);
     void solvePressure(const GLuint divergence_READ, const GLuint pressure_READ, const GLuint pressure_WRITE);
     void pressureProjection(const GLuint pressure_READ, const GLuint velocities_READ, const GLuint velocities_WRITE);
-    void applyVorticity(const GLuint velocities_READ_WRITE, const GLuint vorticity);
+    void RBMethod(const GLuint *velocities, const GLuint divergence, const GLuint pressure);
+    void applyVorticity(const GLuint velocities_READ_WRITE, const GLuint curl);
     void applyBuoyantForce(const GLuint velocities_READ_WRITE, const GLuint temperature, const GLuint density, const float kappa, const float sigma, const float t0);
     void updateQAndTheta(const GLuint qTex, const GLuint* thetaTex);
   private:
-    void dispatch();
+    void dispatch(const unsigned wSize, const unsigned hSize);
 
     ProgramOptions *options;
 
@@ -45,13 +46,18 @@ class SimulationFactory
     GLint maccormackProgram;
     GLint RKProgram;
     GLint divCurlProgram;
+    GLint divRBProgram;
     GLint jacobiProgram;
+    GLint jacobiBlackProgram;
+    GLint jacobiRedProgram;
     GLint pressureProjectionProgram;
+    GLint pressureProjectionRBProgram;
     GLint applyVorticityProgram;
     GLint applyBuoyantForceProgram;
     GLint waterContinuityProgram;
 
-    std::vector<GLint> reduceTextures;
+    std::vector<GLuint> reduceTextures;
+    GLuint emptyTexture;
 };
 
 #endif //SIMULATIONFACTORY_H

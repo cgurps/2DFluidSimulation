@@ -24,9 +24,9 @@ class Smoke : public SimulationBase
     GLuint velocitiesTexture[2];
     GLuint density[2];
     GLuint temperature[2];
+    GLuint divRBTexture;
+    GLuint pressureRBTexture;
     GLuint divergenceCurlTexture;
-    GLuint pressureTexture[2];
-    GLuint emptyTexture;
 };
 
 #endif //SMOKE_H

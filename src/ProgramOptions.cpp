@@ -51,15 +51,11 @@ ProgramOptions parseOptions(int argc, char* argv[])
     ("deltaTime,t", po::value<float>(&options.dt)->default_value(0.1f), "time step for the simulation")
     ("simWidth", po::value<unsigned>(&options.simWidth)->default_value(1024), "simulation width (must be a power of 2)")
     ("simHeight", po::value<unsigned>(&options.simHeight)->default_value(1024), "simulation height (must be a power of 2)")
-  ;
-
-  po::options_description poIntegrator("Advection integrator options");
-  poIntegrator.add_options()
-    ("rk-order", po::value<int>(&options.RKorder)->default_value(4), "order for the runge-kutta integrator")
+    ("jacobi-iterations", po::value<unsigned>(&options.jacobiIterations)->default_value(50), "number of iterations for the Jacobi method")
   ;
 
   po::options_description po_options("sim [options]");
-  po_options.add(poWindow).add(poSim).add(poIntegrator).add_options()
+  po_options.add(poWindow).add(poSim).add_options()
     ("help,h", "display this message")
   ;
 

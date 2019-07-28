@@ -23,7 +23,7 @@ struct ProgramOptions
 
   SimulationType simType;
   unsigned simWidth, simHeight;
-  int RKorder;
+  unsigned jacobiIterations;
   float dt;
 
   bool exportImages;

@@ -10,9 +10,9 @@ Smoke::~Smoke()
 {
   GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
   GL_CHECK( glDeleteTextures(4, density) );
+  GL_CHECK( glDeleteTextures(1, &pressureRBTexture) );
+  GL_CHECK( glDeleteTextures(1, &divRBTexture) );
   GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
-  GL_CHECK( glDeleteTextures(2, pressureTexture) );
-  GL_CHECK( glDeleteTextures(1, &emptyTexture) );
 }
 
 void Smoke::Init()
@@ -39,12 +39,10 @@ void Smoke::Init()
   divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
   fillTextureWithFunctor(divergenceCurlTexture, options->simWidth, options->simHeight, f);
 
-  pressureTexture[0] = createTexture2D(options->simWidth, options->simHeight);
-  pressureTexture[1] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(pressureTexture[0], options->simWidth, options->simHeight, f);
+  divRBTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
+  fillTextureWithFunctor(divRBTexture, options->simWidth / 2, options->simHeight / 2, f);
 
-  emptyTexture = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(emptyTexture, options->simWidth, options->simHeight, f);
+  pressureRBTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
 }
 
 void Smoke::AddSplat()
@@ -94,17 +92,8 @@ void Smoke::Update()
   /********** Buoyant Force **********/
   sFact.applyBuoyantForce(velocitiesTexture[READ], temperature[READ], density[READ], 0.25f, 0.1f, 15.0f);
 
-  /********** Poisson Solving with Jacobi **********/
-  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-  sFact.copy(emptyTexture, pressureTexture[READ]);
-  for(int k = 0; k < 40; ++k)
-  {
-    sFact.solvePressure(divergenceCurlTexture, pressureTexture[READ], pressureTexture[WRITE]);
-    std::swap(pressureTexture[READ], pressureTexture[WRITE]);
-  }
-
-  /********** Pressure Projection **********/
-  sFact.pressureProjection(pressureTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE]);
+  /********** Red-Black Jacobi for the pressure projection *********/
+  sFact.RBMethod(velocitiesTexture, divRBTexture, pressureRBTexture);
   std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Updating the shared texture **********/

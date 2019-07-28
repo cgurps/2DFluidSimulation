@@ -24,8 +24,8 @@ void main()
   float pC = texelFetch(pressure_READ, pixelCoords, 0).x;
   if(pixelCoords.x == 0) pL = pC;
   if(pixelCoords.y == 0) pB = pC;
-  if(pixelCoords.x >= tSize.x - 1) pR = pC;
-  if(pixelCoords.y >= tSize.y - 1) pT = pC;
+  if(pixelCoords.x == tSize.x - 1) pR = pC;
+  if(pixelCoords.y == tSize.y - 1) pT = pC;
 
   imageStore(pressure_WRITE, pixelCoords, vec4(0.25f * (pL + pR + pB + pT - dC), 0.0f, 0.0f, 1.0f));
 }
