@@ -47,6 +47,13 @@ Each quantities is represented by a texture of 16bits floating points on the GPU
 
 If you (ever) wish to play around this simulation, you should create a new class that inherits from `SimulationBase` and uses the `SimulationFactory` to compute whatever you need to compute. This new class must overload `Init()`, `Update()`, `AddSplat()`, `AddSplat(const int)` and `RemoveSplat()` for the simulation to work.
 
+# Note on the Jacobi method
+I implemented a variation on the original Jacobi method described in [Harris et al.](https://users.cg.tuwien.ac.at/bruckner/ss2004/seminar/A3b/Harris2003%20-%20Simulation%20of%20Cloud%20Dynamics%20on%20Graphics%20Hardware.pdf) called the Red-Black Jacobi method. The idea is to pack four values into a single texel.
+<p align="center">
+  <img src="images/equations/RB.png">
+</p>
+The resulting textures has half the size of the original one. Then, the Jacobi iteration updates first the black values (which only depend on the red one) and second the red values (using the computed black values). This almost divides the number of texel fetches by two, hence we can obtain the same order of convergence in approximatively half the time! The actual tricky part is to pack the divergence into one texel. This is done in one shader pass by grabing numerous adjacent values of the current texel (see the file `divRB.comp`).
+
 ## References
 1. [@](http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/): a simple tutorial on fluid simulation
 2. [@](https://www.cs.ubc.ca/~rbridson/fluidsimulation/fluids_notes.pdf): this awesome books covers a lot of techniques for simulating fluids (classic!)
