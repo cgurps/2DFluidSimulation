@@ -8,11 +8,11 @@
 
 Smoke::~Smoke()
 {
-  GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
-  GL_CHECK( glDeleteTextures(4, density) );
-  GL_CHECK( glDeleteTextures(1, &pressureRBTexture) );
-  GL_CHECK( glDeleteTextures(1, &divRBTexture) );
-  GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
+  glDeleteTextures(4, velocitiesTexture);
+  glDeleteTextures(4, density);
+  glDeleteTextures(1, &pressureRBTexture);
+  glDeleteTextures(1, &divRBTexture);
+  glDeleteTextures(1, &divergenceCurlTexture);
 }
 
 void Smoke::Init()

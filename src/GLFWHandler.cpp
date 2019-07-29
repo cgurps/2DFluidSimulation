@@ -4,92 +4,13 @@
 
 #include <chrono>
 
+/********** Event Callbacks **********/
 static void glfwErrorCallback(int error, const char* description)
 {
   std::cerr << "Error(" << error << "): " << description << std::endl;
 }
 
-GLFWHandler::GLFWHandler(ProgramOptions *options)
-  : options(options)
-{
-  glfwSetErrorCallback(glfwErrorCallback);
-
-  if(!glfwInit())
-    std::cerr << "GLFW Init failed!" << std::endl;
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-
-  window = glfwCreateWindow(options->windowWidth, options->windowHeight, "Fluid Simulation", NULL, NULL);
-  if(!window)
-    std::cerr << "GLFW Window creation failed!" << std::endl;
-
-  glfwMakeContextCurrent(window);
-
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    std::cerr << "Failed to initialize GLAD" << std::endl;
-
-  printf("OpenGL version supported by this platform (%s)\n",
-      glGetString(GL_VERSION));
-  printf("Supported GLSL version is %s.\n",
-      glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-  glfwSwapInterval(1);
-
-  GL_CHECK(glGenVertexArrays(1, &vao));
-  GL_CHECK(glBindVertexArray(vao));
-
-  std::cout << "VAO Created." << std::endl;
-
-  /*********** VBO ***********/
-  /** These corresponds to the 
-   * 2D screen coordinates of the texture 
-   **/
-  float vertices[] = {
-    -1.0f, -1.0f,
-    -1.0f,  1.0f,
-    1.0f, -1.0f,
-    1.0f,  1.0f
-  };
-
-  GL_CHECK(glGenBuffers(1, &vbo));
-  GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-  GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
-
-  std::cout << "VBO Created." << std::endl;
-
-  vertex_shader = compileShader("shaders/vertex.glsl", GL_VERTEX_SHADER);
-  fragment_shader = compileShader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
-
-  shader_program = glCreateProgram();
-  GL_CHECK(glAttachShader(shader_program, vertex_shader));
-  GL_CHECK(glAttachShader(shader_program, fragment_shader));
-  GL_CHECK(glBindFragDataLocation(shader_program, 0, "out_color") );
-  GL_CHECK(glLinkProgram(shader_program));
-  GL_CHECK(glUseProgram(shader_program));
-
-  GLint posAttrib = glGetAttribLocation(shader_program, "position");
-  GL_CHECK(glEnableVertexAttribArray(posAttrib));
-  GL_CHECK(glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0));
-}
-
-GLFWHandler::~GLFWHandler()
-{
-  glfwDestroyWindow(window);
-  glfwTerminate();
-}
-
-void GLFWHandler::AttachSimulation(SimulationBase* sim)
-{
-  simulation = sim;
-  simulation->Init();
-}
-
-/********** Event Callbacks **********/
-
-static void mouseCallBack(GLFWwindow* window, int button, int action, int mods)
+static void mouseCallback(GLFWwindow* window, int button, int action, int)
 { 
   if(button == GLFW_MOUSE_BUTTON_LEFT)
   {
@@ -101,7 +22,7 @@ static void mouseCallBack(GLFWwindow* window, int button, int action, int mods)
   }
 }
 
-static void keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void keyCallback(GLFWwindow* window, int key, int, int action, int)
 {
   if(key == GLFW_KEY_E && action == GLFW_PRESS)
   {
@@ -124,35 +45,135 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
 
 /*************************************/
 
-void GLFWHandler::RegisterEvent()
+GLFWHandler::GLFWHandler(ProgramOptions *options)
+  : options(options)
+{
+  glfwSetErrorCallback(glfwErrorCallback);
+
+  if(!glfwInit())
+  {
+    std::cerr << "GLFW Init failed!" << std::endl;
+    std::exit(1);
+  }
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+
+  window = glfwCreateWindow(options->windowWidth, options->windowHeight, "Fluid Simulation", NULL, NULL);
+  if(!window)
+  {
+    std::cerr << "GLFW Window creation failed!" << std::endl;
+    std::exit(1);
+  }
+
+  glfwMakeContextCurrent(window);
+
+  registerEvent();
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+  {
+    std::cerr << "Failed to initialize GLAD" << std::endl;
+    std::exit(1);
+  }
+
+  printf("OpenGL version supported by this platform (%s)\n",
+      glGetString(GL_VERSION));
+  printf("Supported GLSL version is %s.\n",
+      glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+  glfwSwapInterval(1);
+
+  GLint flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+  if(flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+  {
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(MessageCallback, 0);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+  }
+  else
+  {
+    std::cout << "Failed to init debug context" << std::endl;
+  }
+
+  /********** Configuring pipeline *********/
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  float vertices[] = 
+  {
+      // positions     // texture coords
+      1.0f,   1.0f,    1.0f, 1.0f,
+      1.0f, - 1.0f,    1.0f, 0.0f,
+    - 1.0f,   1.0f,    0.0f, 1.0f,
+    - 1.0f, - 1.0f,    0.0f, 0.0f
+  };
+
+  unsigned int indices[] =
+  {
+    0, 1, 2,
+    3, 1, 2
+  };
+
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+  glGenBuffers(1, &ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+  /********** Linking shaders **********/
+  vertex_shader = compileShader("shaders/vertex.glsl", GL_VERTEX_SHADER);
+  fragment_shader = compileShader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
+
+  shader_program = glCreateProgram();
+  glAttachShader(shader_program, vertex_shader);
+  glAttachShader(shader_program, fragment_shader);
+  glBindFragDataLocation(shader_program, 0, "outColor");
+  glLinkProgram(shader_program);
+  glUseProgram(shader_program);
+}
+
+GLFWHandler::~GLFWHandler()
+{
+  glfwDestroyWindow(window);
+  glfwTerminate();
+}
+
+void GLFWHandler::attachSimulation(SimulationBase* sim)
+{
+  simulation = sim;
+  simulation->Init();
+}
+
+void GLFWHandler::registerEvent()
 {
   glfwSetWindowUserPointer(window, this);  
-  glfwSetMouseButtonCallback(window, mouseCallBack);
-  glfwSetKeyCallback(window, keyCallBack);
+  glfwSetMouseButtonCallback(window, mouseCallback);
+  glfwSetKeyCallback(window, keyCallback);
   glfwSetWindowSizeCallback(window, windowResizeCallback);
 }
 
-void GLFWHandler::Run()
+void GLFWHandler::run()
 {
-  /********** MVP MATRIX **********/
-  const float matrix[16] =
-  {
-      1.0f, 0.0f, 0.0f, 0.0f,
-      0.0f, 1.0f, 0.0f, 0.0f,
-      0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 1.0f
-  };
-
-  int mat_loc = glGetUniformLocation(shader_program, "MVP");
   int tex_loc = glGetUniformLocation(shader_program, "tex");
+  glUseProgram(shader_program);
+  glUniform1i(tex_loc, 0);
 
-  /********** LINEAR SAMPLER FOR TEXTURE RENDERING **********/
+  /********** Linear Sampler for rendering the texture **********/
   GLuint linearSampler;
-  GL_CHECK( glGenSamplers(1, &linearSampler) );
-  GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
-  GL_CHECK( glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
+  glGenSamplers(1, &linearSampler);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  /********** COMPUTE SHADER TIMINGS ***********/
+  /********** Compute shader timings ***********/
   GLint64 startTime, stopTime;
   GLuint queryID[2];
 
@@ -160,29 +181,29 @@ void GLFWHandler::Run()
     start = std::chrono::high_resolution_clock::now();
   double sumOfDeltaT = 0.0;
 
-  /********** SAVING IMAGES **********/
+  /********** Array of images for the export **********/
   std::vector<unsigned char*> buffers;
 
-  /********** RENDERING & SIMULATION LOOP ***********/
+  /********** Rendering & Simulation Loop ***********/
   while (!glfwWindowShouldClose(window))
   {
-    /********** GENERATING QUERIES FOR TIMINGS **********/
-    GL_CHECK(glGenQueries(2, queryID));
-    GL_CHECK(glQueryCounter(queryID[0], GL_TIMESTAMP)); 
+    /********** Generating queries for timing **********/
+    glGenQueries(2, queryID);
+    glQueryCounter(queryID[0], GL_TIMESTAMP); 
 
-    /********** UPDATING THE SIMULATION **********/
+    /********** Updating the simulation **********/
     simulation->Update();
 
-    /********** COMPUTE SHADER EXECUTION TIME *********/
-    GL_CHECK(glQueryCounter(queryID[1], GL_TIMESTAMP));
+    /********** Compute shader execution time *********/
+    glQueryCounter(queryID[1], GL_TIMESTAMP);
     GLint stopTimerAvailable = 0;
     while (!stopTimerAvailable) {
-        GL_CHECK(glGetQueryObjectiv(queryID[1],
+        glGetQueryObjectiv(queryID[1],
                               GL_QUERY_RESULT_AVAILABLE,
-                              &stopTimerAvailable));
+                              &stopTimerAvailable);
     }
-    GL_CHECK(glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime));
-    GL_CHECK(glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime));
+    glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
+    glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
 
     std::chrono::high_resolution_clock::time_point 
       current = std::chrono::high_resolution_clock::now();
@@ -197,31 +218,34 @@ void GLFWHandler::Run()
 
     glfwPollEvents();
 
-    /********** RENDERING THE TEXTURE **********/
+    /********** Rendering the texture **********/
     int displayW, displayH;
     glfwGetFramebufferSize(window, &displayW, &displayH);
-    GL_CHECK(glViewport(0, 0, displayW, displayH));
+    glViewport(0, 0, displayW, displayH);
 
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
-    GL_CHECK(glUseProgram(shader_program));
-    GL_CHECK(glActiveTexture(GL_TEXTURE0));
-    GL_CHECK(glUniform1i(tex_loc, 0));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, simulation->shared_texture));
-    GL_CHECK(glBindSampler(0, linearSampler));
-    GL_CHECK(glUniformMatrix4fv(mat_loc, 1, GL_FALSE, matrix));
-    GL_CHECK(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
+    glUseProgram(shader_program);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, simulation->shared_texture);
+    glBindSampler(0, linearSampler);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    /********** Saving texture for the export **********/
     if(options->exportImages)
     {
       unsigned char *colors = new unsigned char[3 * options->simWidth * options->simHeight];
-      GL_CHECK(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, colors));
+      glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, colors);
       buffers.push_back(colors);
     }
 
     glfwSwapBuffers(window);
   }
 
+  /********** Exporting the frames to the disk **********/
   if(options->exportImages)
   {
     auto storeImage = [](const char* path, const unsigned char* colors, unsigned int w, unsigned int h)
@@ -241,7 +265,7 @@ void GLFWHandler::Run()
 
       unsigned error = lodepng_encode24_file(path, reversed, w, h);
       if(error) std::cout << "Encode Error: " << error << ": " << lodepng_error_text(error) << std::endl;
-      delete [] colors;
+      delete[] colors;
     };
 
     for(unsigned int i = 0; i < buffers.size(); ++i)

@@ -7,13 +7,13 @@
 /********** Utility Functions **********/
 void bindImageTexture(const GLuint binding, const GLuint tex) 
 {
-  GL_CHECK( glBindImageTexture(binding, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F) );
+  glBindImageTexture(binding, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
 }
 
 void bindTexture(const GLuint binding, const GLuint tex)
 {
-  GL_CHECK( glActiveTexture(GL_TEXTURE0 + binding) ); 
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, tex) );
+  glActiveTexture(GL_TEXTURE0 + binding); 
+  glBindTexture(GL_TEXTURE_2D, tex);
 }
 
 void fillTextureWithFunctor(GLuint tex, 
@@ -38,8 +38,8 @@ void fillTextureWithFunctor(GLuint tex,
     }
   }
 
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, tex) );
-  GL_CHECK( glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data) );
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data);
 
   delete [] data;
 }
@@ -87,18 +87,18 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
 
 SimulationFactory::~SimulationFactory()
 {
-  GL_CHECK( glDeleteTextures(reduceTextures.size(), reduceTextures.data()) );
+  glDeleteTextures(reduceTextures.size(), reduceTextures.data());
 }
 
 void SimulationFactory::dispatch(const unsigned wSize, const unsigned hSize)
 {
-  GL_CHECK( glDispatchCompute(wSize, hSize, 1) );
-  GL_CHECK( glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT) );
+  glDispatchCompute(wSize, hSize, 1);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 void SimulationFactory::copy(const GLuint in, const GLuint out)
 {
-  GL_CHECK( glUseProgram(copyProgram) );
+  glUseProgram(copyProgram);
   bindImageTexture(0, out);
   bindImageTexture(1, in);
   dispatch(globalSizeX, globalSizeY);
@@ -108,7 +108,7 @@ float SimulationFactory::maxReduce(const GLuint tex)
 {
   auto rUtil = [&](const GLuint iTex, const GLuint oTex, const unsigned size)
   {
-    GL_CHECK( glUseProgram(maxReduceProgram) ); 
+    glUseProgram(maxReduceProgram); 
     bindImageTexture(0, oTex);
     bindTexture(1, iTex);
     unsigned dSize = std::max(size / 32, 1u);
@@ -124,8 +124,8 @@ float SimulationFactory::maxReduce(const GLuint tex)
   }
 
   float *data = new float[4];
-  GL_CHECK( glBindTexture(GL_TEXTURE_2D, reduceTextures[reduceTextures.size() - 1]) );
-  GL_CHECK( glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data) );
+  glBindTexture(GL_TEXTURE_2D, reduceTextures[reduceTextures.size() - 1]);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data);
 
   using std::max; using std::abs;
   float m = max(max(max(abs(data[0]), abs(data[1])), abs(data[2])), abs(data[3]));
@@ -137,9 +137,9 @@ float SimulationFactory::maxReduce(const GLuint tex)
 
 void SimulationFactory::RKAdvect(const GLuint velocities, const GLuint field_READ, const GLuint field_WRITE, const float dt)
 {
-  GL_CHECK( glUseProgram(RKProgram) );
+  glUseProgram(RKProgram);
   GLuint location = glGetUniformLocation(RKProgram, "dt");
-  GL_CHECK( glUniform1f(location, dt) );
+  glUniform1f(location, dt);
   bindImageTexture(0, field_WRITE);
   bindTexture(1, field_READ);
   bindTexture(2, velocities);
@@ -155,9 +155,9 @@ void SimulationFactory::mcAdvect(const GLuint velocities, const GLuint *fields)
 
 void SimulationFactory::maccormackStep(const GLuint field_WRITE, const GLuint field_n, const GLuint field_n_1, const GLuint field_n_hat, const GLuint velocities)
 {
-  GL_CHECK( glUseProgram(maccormackProgram) );
+  glUseProgram(maccormackProgram);
   GLuint location = glGetUniformLocation(maccormackProgram, "dt");
-  GL_CHECK( glUniform1f(location, options->dt) );
+  glUniform1f(location, options->dt);
   bindImageTexture(0, field_WRITE);
   bindTexture(1, field_n);
   bindTexture(2, field_n_hat);
@@ -168,7 +168,7 @@ void SimulationFactory::maccormackStep(const GLuint field_WRITE, const GLuint fi
 
 void SimulationFactory::RBMethod(const GLuint *velocities, const GLuint divergence, const GLuint pressure)
 {
-  GL_CHECK( glUseProgram(divRBProgram) );
+  glUseProgram(divRBProgram);
   bindImageTexture(0, divergence);
   bindTexture(1, velocities[0]);
   dispatch(globalSizeX / 2, globalSizeY / 2);
@@ -177,20 +177,20 @@ void SimulationFactory::RBMethod(const GLuint *velocities, const GLuint divergen
 
   for(unsigned i = 0; i < options->jacobiIterations; ++i)
   {
-    GL_CHECK( glUseProgram(jacobiBlackProgram) );
+    glUseProgram(jacobiBlackProgram);
     bindImageTexture(0, pressure);
     bindTexture(1, pressure);
     bindTexture(2, divergence);
     dispatch(globalSizeX / 2, globalSizeY / 2);
 
-    GL_CHECK( glUseProgram(jacobiRedProgram) );
+    glUseProgram(jacobiRedProgram);
     bindImageTexture(0, pressure);
     bindTexture(1, pressure);
     bindTexture(2, divergence);
     dispatch(globalSizeX / 2, globalSizeY / 2);
   }
 
-  GL_CHECK( glUseProgram(pressureProjectionRBProgram) );
+  glUseProgram(pressureProjectionRBProgram);
   bindImageTexture(0, velocities[1]);
   bindTexture(1, velocities[0]);
   bindTexture(2, pressure);
@@ -199,7 +199,7 @@ void SimulationFactory::RBMethod(const GLuint *velocities, const GLuint divergen
 
 void SimulationFactory::divergenceCurl(const GLuint velocities, const GLuint divergence_curl_WRITE)
 {
-  GL_CHECK( glUseProgram(divCurlProgram) );
+  glUseProgram(divCurlProgram);
   bindImageTexture(0, divergence_curl_WRITE);
   bindTexture(1, velocities);
   dispatch(globalSizeX, globalSizeY);
@@ -207,7 +207,7 @@ void SimulationFactory::divergenceCurl(const GLuint velocities, const GLuint div
 
 void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint pressure_READ, const GLuint pressure_WRITE)
 {
-  GL_CHECK( glUseProgram(jacobiProgram) );
+  glUseProgram(jacobiProgram);
   bindImageTexture(0, pressure_WRITE);
   bindTexture(1, pressure_READ);
   bindTexture(2, divergence_READ);
@@ -216,7 +216,7 @@ void SimulationFactory::solvePressure(const GLuint divergence_READ, const GLuint
 
 void SimulationFactory::pressureProjection(const GLuint pressure_READ, const GLuint velocities_READ, const GLuint velocities_WRITE)
 {
-  GL_CHECK( glUseProgram(pressureProjectionProgram) );
+  glUseProgram(pressureProjectionProgram);
   bindImageTexture(0, velocities_WRITE);
   bindTexture(1, velocities_READ);
   bindTexture(2, pressure_READ);
@@ -225,9 +225,9 @@ void SimulationFactory::pressureProjection(const GLuint pressure_READ, const GLu
 
 void SimulationFactory::applyVorticity(const GLuint velocities_READ_WRITE, const GLuint curl)
 {
-  GL_CHECK( glUseProgram(applyVorticityProgram) );
+  glUseProgram(applyVorticityProgram);
   GLuint location = glGetUniformLocation(applyVorticityProgram, "dt");
-  GL_CHECK( glUniform1f(location, options->dt) );
+  glUniform1f(location, options->dt);
   bindImageTexture(0, velocities_READ_WRITE);
   bindTexture(1, curl);
   dispatch(globalSizeX, globalSizeY);
@@ -235,15 +235,15 @@ void SimulationFactory::applyVorticity(const GLuint velocities_READ_WRITE, const
 
 void SimulationFactory::applyBuoyantForce(const GLuint velocities_READ_WRITE, const GLuint temperature, const GLuint density, const float kappa, const float sigma, const float t0)
 {
-  GL_CHECK( glUseProgram(applyBuoyantForceProgram) );
+  glUseProgram(applyBuoyantForceProgram);
   GLuint location = glGetUniformLocation(applyBuoyantForceProgram, "dt");
-  GL_CHECK( glUniform1f(location, options->dt) );
+  glUniform1f(location, options->dt);
   location = glGetUniformLocation(applyBuoyantForceProgram, "kappa");
-  GL_CHECK( glUniform1f(location, kappa) );
+  glUniform1f(location, kappa);
   location = glGetUniformLocation(applyBuoyantForceProgram, "sigma");
-  GL_CHECK( glUniform1f(location, sigma) );
+  glUniform1f(location, sigma);
   location = glGetUniformLocation(applyBuoyantForceProgram, "t0");
-  GL_CHECK( glUniform1f(location, t0) );
+  glUniform1f(location, t0);
   bindImageTexture(0, velocities_READ_WRITE);
   bindTexture(1, temperature);
   bindTexture(2, density);
@@ -255,20 +255,20 @@ void SimulationFactory::addSplat(const GLuint field, const std::tuple<int, int> 
   auto [x, y] = pos;
   auto [r, g, b] = color;
 
-  GL_CHECK( glUseProgram(addSmokeSpotProgram) );
+  glUseProgram(addSmokeSpotProgram);
   GLuint location = glGetUniformLocation(addSmokeSpotProgram, "spotPos");
-  GL_CHECK( glUniform2i(location, x, y) );
+  glUniform2i(location, x, y);
   location = glGetUniformLocation(addSmokeSpotProgram, "color");
-  GL_CHECK( glUniform3f(location, r, g, b) );
+  glUniform3f(location, r, g, b);
   location = glGetUniformLocation(addSmokeSpotProgram, "intensity");
-  GL_CHECK( glUniform1f(location, intensity) );
+  glUniform1f(location, intensity);
   bindImageTexture(0, field);
   dispatch(globalSizeX, globalSizeY);
 }
 
 void SimulationFactory::updateQAndTheta(const GLuint qTex, const GLuint* thetaTex)
 {
-  GL_CHECK( glUseProgram(waterContinuityProgram) );
+  glUseProgram(waterContinuityProgram);
   bindImageTexture(0, qTex);
   bindImageTexture(1, thetaTex[2]);
   bindTexture(2, thetaTex[0]);

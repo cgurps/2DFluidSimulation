@@ -16,10 +16,9 @@ class GLFWHandler
 
     ~GLFWHandler();
 
-    void AttachSimulation(SimulationBase* sim);
-    void RegisterEvent();
+    void attachSimulation(SimulationBase* sim);
 
-    void Run();
+    void run();
 
     ProgramOptions *options;
 
@@ -29,8 +28,10 @@ class GLFWHandler
 
     int leftMouseButtonLastState = GLFW_RELEASE;
   private:
+    void registerEvent();
+
     GLuint vertex_shader, fragment_shader, shader_program;
-    GLuint vao, vbo;
+    GLuint vao, vbo, ebo;
 };
 
 #endif //GLFWHANDLER_H

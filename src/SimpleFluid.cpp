@@ -8,11 +8,11 @@
 
 SimpleFluid::~SimpleFluid()
 {
-  GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
-  GL_CHECK( glDeleteTextures(4, density) );
-  GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
-  GL_CHECK( glDeleteTextures(1, &divRBTexture) );
-  GL_CHECK( glDeleteTextures(1, &pressureRBTexture) );
+  glDeleteTextures(4, velocitiesTexture);
+  glDeleteTextures(4, density);
+  glDeleteTextures(1, &divergenceCurlTexture);
+  glDeleteTextures(1, &divRBTexture);
+  glDeleteTextures(1, &pressureRBTexture);
 }
 
 void SimpleFluid::Init()
@@ -117,17 +117,17 @@ void SimpleFluid::Update()
   sFact.RKAdvect(velocitiesTexture[READ], velocitiesTexture[READ], velocitiesTexture[WRITE], options->dt);
   std::swap(velocitiesTexture[0], velocitiesTexture[1]);
 
-  /********** Vorticity **********/
-  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
-
-  /********** Red-Black Jacobi for the pressure projection *********/
-  sFact.RBMethod(velocitiesTexture, divRBTexture, pressureRBTexture);
-  std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
-  
   /********** Field Advection **********/
   sFact.RKAdvect(velocitiesTexture[READ], density[READ], density[WRITE], options->dt);
   std::swap(density[0], density[1]);
+
+  /********** Vorticity **********/
+  //sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
+  //sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
+
+  ///********** Red-Black Jacobi for the pressure projection *********/
+  //sFact.RBMethod(velocitiesTexture, divRBTexture, pressureRBTexture);
+  //std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];

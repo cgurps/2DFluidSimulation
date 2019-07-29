@@ -1,13 +1,12 @@
 #version 410 core
 
-in vec2 position;
+layout (location = 0) in vec2 position;
+layout (location = 1) in vec2 tCoords;
 
-uniform mat4 MVP;
-
-out vec2 tex_Coord;
+out vec2 texCoord;
 
 void main()
 {
-  tex_Coord = position * 0.5f + 0.5f;
-  gl_Position = MVP * vec4(position, 0.0, 1.0);
+  texCoord = tCoords;
+  gl_Position = vec4(position, 0.0, 1.0);
 }

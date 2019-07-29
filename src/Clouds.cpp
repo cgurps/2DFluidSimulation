@@ -8,11 +8,11 @@
 
 Clouds::~Clouds()
 {
-  GL_CHECK( glDeleteTextures(4, velocitiesTexture) );
-  GL_CHECK( glDeleteTextures(4, density) );
-  GL_CHECK( glDeleteTextures(1, &divergenceCurlTexture) );
-  GL_CHECK( glDeleteTextures(2, pressureTexture) );
-  GL_CHECK( glDeleteTextures(1, &emptyTexture) );
+  glDeleteTextures(4, velocitiesTexture);
+  glDeleteTextures(4, density);
+  glDeleteTextures(1, &divergenceCurlTexture);
+  glDeleteTextures(2, pressureTexture);
+  glDeleteTextures(1, &emptyTexture);
 }
 
 void Clouds::Init()

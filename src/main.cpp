@@ -33,9 +33,8 @@ int main(int argc, char** argv)
     }
   }
   
-  handler.AttachSimulation(sim);
-  handler.RegisterEvent();
-  handler.Run();
+  handler.attachSimulation(sim);
+  handler.run();
 
   return 0;
 }
