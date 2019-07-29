@@ -20,13 +20,6 @@ void APIENTRY MessageCallback(GLenum source,
     const GLchar* message,
     const void* userParam);
 
-void CheckOpenGLError(const char* stmt, const char* fname, int line);
-
-//#define GL_CHECK(stmt) do { \
-//  stmt; \
-//  CheckOpenGLError(#stmt, __FILE__, __LINE__); \
-//} while (0)
-
 GLuint createTexture2D(const unsigned width, const unsigned height);
 GLuint compileShader(const std::string& s, GLenum type);
 GLuint compileAndLinkShader(const std::string& s, GLenum type);
