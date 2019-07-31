@@ -16,7 +16,7 @@ void main()
 
   vec2 v = RK(velocities_READ, pixelCoords, dt);
   vec2 pos = pixelCoords - dt * v;
-  vec4 val = texture2D_bilinear(field_READ, pixelToTexel(pos, tSize));
+  vec4 val = TEXTURE_2D(field_READ, pixelToTexel(pos, tSize));
 
   imageStore(field_WRITE, ivec2(pixelCoords), val);
 }

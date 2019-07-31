@@ -122,12 +122,12 @@ void SimpleFluid::Update()
   std::swap(density[0], density[1]);
 
   /********** Vorticity **********/
-  //sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
-  //sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
+  sFact.divergenceCurl(velocitiesTexture[READ], divergenceCurlTexture);
+  sFact.applyVorticity(velocitiesTexture[READ], divergenceCurlTexture);
 
-  ///********** Red-Black Jacobi for the pressure projection *********/
-  //sFact.RBMethod(velocitiesTexture, divRBTexture, pressureRBTexture);
-  //std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
+  /********** Red-Black Jacobi for the pressure projection *********/
+  sFact.RBMethod(velocitiesTexture, divRBTexture, pressureRBTexture);
+  std::swap(velocitiesTexture[READ], velocitiesTexture[WRITE]);
 
   /********** Updating the shared texture **********/
   shared_texture = density[READ];
