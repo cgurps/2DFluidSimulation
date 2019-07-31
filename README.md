@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="400" height="400" src="images/splats.png">
+  <img width="400" height="400" src="images/simple_fluid.png">
   <img width="400" height="400" src="images/smoke.png">
 </p>
 
