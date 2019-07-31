@@ -27,7 +27,7 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
   if(key == GLFW_KEY_E && action == GLFW_PRESS)
   {
     GLFWHandler *handler = (GLFWHandler*) glfwGetWindowUserPointer(window);
-    handler->simulation->AddMultipleSplat(100);
+    handler->simulation->AddMultipleSplat(10);
   }
 
   if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
