@@ -8,8 +8,8 @@ layout(binding = 1) uniform sampler2D velocities_READ;
 
 void main()
 {
-  ivec2 tSize = TEXTURE_SIZE(velocities_READ);
-  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  const ivec2 tSize = TEXTURE_SIZE(velocities_READ);
+  const ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
   const ivec2 dx = ivec2(1, 0); 
   const ivec2 dy = ivec2(0, 1);

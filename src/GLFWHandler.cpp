@@ -42,7 +42,6 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
   handler->options->windowWidth = width;
   handler->options->windowHeight = height;
 }
-
 /*************************************/
 
 GLFWHandler::GLFWHandler(ProgramOptions *options)
@@ -172,6 +171,9 @@ void GLFWHandler::run()
   glGenSamplers(1, &linearSampler);
   glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
   /********** Compute shader timings ***********/
   GLint64 startTime, stopTime;
@@ -233,6 +235,8 @@ void GLFWHandler::run()
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glBindSampler(0, 0);
 
     /********** Saving texture for the export **********/
     if(options->exportImages)

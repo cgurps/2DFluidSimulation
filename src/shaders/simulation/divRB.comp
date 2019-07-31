@@ -24,8 +24,8 @@ layout(binding = 1) uniform sampler2D velocities_READ;
 
 void main()
 {
-  ivec2 tSize = TEXTURE_SIZE(velocities_READ);
-  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+  const ivec2 tSize = TEXTURE_SIZE(velocities_READ);
+  const ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
 
   vec2 field11 = texelFetch(velocities_READ      , 2 * pixelCoords, 0               ).xy;
   vec2 field01 = texelFetchOffset(velocities_READ, 2 * pixelCoords, 0, ivec2(-1,  0)).xy;
@@ -50,21 +50,21 @@ void main()
     field10.y = - field11.y;
     field20.y = - field21.y;
   }
-  if(2 * pixelCoords.x + 1 == tSize.x - 1)
+  if(2 * pixelCoords.x + 1 >= tSize.x - 1)
   {
     field31.x = - field21.x;
     field32.x = - field22.x;
   }
-  if(2 * pixelCoords.y + 1 == tSize.y - 1)
+  if(2 * pixelCoords.y + 1 >= tSize.y - 1)
   {
     field13.y = - field12.y;
     field23.y = - field22.y;
   }
 
-  float r = 0.5 * (field21.x - field01.x + field12.y - field10.y);
-  float g = 0.5 * (field31.x - field11.x + field22.y - field20.y);
-  float b = 0.5 * (field32.x - field12.x + field23.y - field21.y);
-  float a = 0.5 * (field22.x - field02.x + field13.y - field11.y);
+  const float r = 0.5 * (field21.x - field01.x + field12.y - field10.y);
+  const float g = 0.5 * (field31.x - field11.x + field22.y - field20.y);
+  const float b = 0.5 * (field32.x - field12.x + field23.y - field21.y);
+  const float a = 0.5 * (field22.x - field02.x + field13.y - field11.y);
 
   imageStore(divergence, pixelCoords, vec4(r, g, b, a));
 }

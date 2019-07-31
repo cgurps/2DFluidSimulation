@@ -61,6 +61,7 @@ GLuint createTexture2D(const unsigned width, const unsigned height)
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -96,12 +97,6 @@ GLuint compileShader(const std::string& s, GLenum type)
   }
   else
   {
-    GLint max_length = 0;
-    glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &max_length);
-    char buffer[max_length];
-    glGetShaderInfoLog(shader_id, max_length, &max_length, buffer);
-    glDeleteShader(shader_id);
-    std::cout << std::endl << buffer << std::endl;
     exit(1);
   }
 }

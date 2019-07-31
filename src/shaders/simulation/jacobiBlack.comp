@@ -28,26 +28,21 @@ layout(binding = 2) uniform sampler2D divergence;
 
 void main()
 {
-  ivec2 tSize = TEXTURE_SIZE(pressure_READ);
-  ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-  const ivec2 dx = ivec2(1, 0); 
-  const ivec2 dy = ivec2(0, 1);
+  const ivec2 tSize = TEXTURE_SIZE(pressure_READ);
+  const vec2 pixelCoords = gl_GlobalInvocationID.xy;
+  const vec2 dx = vec2(1, 0); 
+  const vec2 dy = vec2(0, 1);
 
-  vec4 dC = texelFetch(divergence, pixelCoords, 0);
+  const vec4 dC = texelFetch(divergence, ivec2(pixelCoords), 0);
 
-  vec4 pL = texelFetchOffset(pressure_READ, pixelCoords, 0, - dx);
-  vec4 pR = texelFetchOffset(pressure_READ, pixelCoords, 0,   dx);
-  vec4 pB = texelFetchOffset(pressure_READ, pixelCoords, 0, - dy);
-  vec4 pT = texelFetchOffset(pressure_READ, pixelCoords, 0,   dy);
+  const vec4 pC = texelFetch(pressure_READ, ivec2(pixelCoords), 0);
+  const vec4 pL = TEXTURE_2D(pressure_READ, pixelToTexel(pixelCoords - dx, tSize));
+  const vec4 pR = TEXTURE_2D(pressure_READ, pixelToTexel(pixelCoords + dx, tSize));
+  const vec4 pB = TEXTURE_2D(pressure_READ, pixelToTexel(pixelCoords - dy, tSize));
+  const vec4 pT = TEXTURE_2D(pressure_READ, pixelToTexel(pixelCoords + dy, tSize));
 
-  vec4 pC = texelFetch(pressure_READ, pixelCoords, 0);
-  if(pixelCoords.x == 0) pL.y = pC.x;
-  if(pixelCoords.y == 0) pB.w = pC.x;
-  if(pixelCoords.x == tSize.x - 1) pR.w = pC.z;
-  if(pixelCoords.y == tSize.y - 1) pT.y = pC.z;
+  const float r = 0.25 * (pL.y + pC.y + pB.w + pC.w - dC.x);
+  const float b = 0.25 * (pC.w + pR.w + pC.y + pT.y - dC.z);
 
-  float r = 0.25 * (pL.y + pC.y + pB.w + pC.w - dC.x);
-  float b = 0.25 * (pC.w + pR.w + pC.y + pT.y - dC.z);
-
-  imageStore(pressure_WRITE, pixelCoords, vec4(r, pC.y, b, pC.w));
+  imageStore(pressure_WRITE, ivec2(pixelCoords), vec4(r, pC.y, b, pC.w));
 }

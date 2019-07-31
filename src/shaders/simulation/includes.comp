@@ -47,17 +47,14 @@ vec4 texture2D_bilinear(in sampler2D t, in vec2 uv)
 
 vec4 clampValue(in sampler2D t, in vec4 value, in vec2 uv)
 {
-  vec2 res = TEXTURE_SIZE( t );
+  vec2 tSize = TEXTURE_SIZE(t);
 
-  vec2 st = uv*res - 0.5;
+  vec2 npos = floor(uv * tSize - 0.5);
 
-  vec2 iuv = floor( st );
-  vec2 fuv = fract( st );
-
-  vec4 a = TEXTURE_2D( t, (iuv+vec2(0.5,0.5))/res );
-  vec4 b = TEXTURE_2D( t, (iuv+vec2(1.5,0.5))/res );
-  vec4 c = TEXTURE_2D( t, (iuv+vec2(0.5,1.5))/res );
-  vec4 d = TEXTURE_2D( t, (iuv+vec2(1.5,1.5))/res );
+  vec4 a = texture2D_bilinear(t, pixelToTexel(npos + vec2(0.0, 0.0), tSize));
+  vec4 b = texture2D_bilinear(t, pixelToTexel(npos + vec2(1.0, 0.0), tSize));
+  vec4 c = texture2D_bilinear(t, pixelToTexel(npos + vec2(0.0, 1.0), tSize));
+  vec4 d = texture2D_bilinear(t, pixelToTexel(npos + vec2(1.0, 1.0), tSize));
 
   vec4 vMin = min(min(min(a, b), c), d);
   vec4 vMax = max(max(max(a, b), c), d);
@@ -69,10 +66,10 @@ vec2 RK(in sampler2D t, in vec2 pos, in float dt)
 {
   vec2 tSize = TEXTURE_SIZE(t);
 
-  vec2 v1 = TEXTURE_2D(t, pixelToTexel(pos, tSize)).xy;
-  vec2 v2 = TEXTURE_2D(t, pixelToTexel(pos + 0.5 * v1 * dt, tSize)).xy;
-  vec2 v3 = TEXTURE_2D(t, pixelToTexel(pos + 0.5 * v2 * dt, tSize)).xy;
-  vec2 v4 = TEXTURE_2D(t, pixelToTexel(pos + v3 * dt, tSize)).xy;
+  vec2 v1 = texture2D_bilinear(t, pixelToTexel(pos, tSize)).xy;
+  vec2 v2 = texture2D_bilinear(t, pixelToTexel(pos + 0.5 * v1 * dt, tSize)).xy;
+  vec2 v3 = texture2D_bilinear(t, pixelToTexel(pos + 0.5 * v2 * dt, tSize)).xy;
+  vec2 v4 = texture2D_bilinear(t, pixelToTexel(pos + v3 * dt, tSize)).xy;
 
   return (v1 + 2.0 * (v2 + v3) + v4) * (1.0 / 6.0);
 }
