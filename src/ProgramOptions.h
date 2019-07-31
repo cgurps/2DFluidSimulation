@@ -25,6 +25,7 @@ struct ProgramOptions
   unsigned simWidth, simHeight;
   unsigned jacobiIterations;
   float dt;
+  float mcRevert;
 
   bool exportImages;
 };

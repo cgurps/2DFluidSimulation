@@ -6,6 +6,11 @@
 #include <fstream>
 #include <cmath>
 
+float rd()
+{
+  return (float) rand() / (float) RAND_MAX; 
+}
+
 SimpleFluid::~SimpleFluid()
 {
   glDeleteTextures(4, velocitiesTexture);
@@ -22,24 +27,6 @@ void SimpleFluid::Init()
       {
         return std::make_tuple(0.0f, 0.0f,
                                0.0f, 0.0f);
-      };
-
-  //Velocities init function
-  auto f1 = [this](unsigned x, unsigned y)
-      {
-        float xf = (float) x - 0.5f * (float) this->options->simWidth;
-        float yf = (float) y - 0.5f * (float) this->options->simHeight;
-        float norm = std::sqrt(xf * xf + yf * yf);
-        float vx = (y > this->options->simHeight / 2) ? 15.0f : - 15.0f;
-        float vy = (norm < 1e-5) ? 0.0f : 20.0f * xf / norm;
-        return std::make_tuple(vx, 0.0f,
-                               0.0f, 0.0f);
-      };
-
-  auto f3 = [this](unsigned x, unsigned y)
-      {
-        if(y > this->options->simHeight / 2) return std::make_tuple(0.0f, 0.0f, 0.0f, 0.0f);
-        else return std::make_tuple(1.0f, 1.0f, 1.0f, 0.0f);
       };
 
   density[0] = createTexture2D(options->simWidth, options->simHeight);
@@ -61,6 +48,14 @@ void SimpleFluid::Init()
   fillTextureWithFunctor(divRBTexture, options->simWidth / 2, options->simHeight / 2, f);
 
   pressureRBTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
+
+  unsigned x = 300u; unsigned y = 512u;
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(80.0f, 7.0f, 0.0f), 1.0f);
+  sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(75.0 / 255.0, 89.0 / 255.0, 1.0), 2.5f);
+
+  x = 700u; y = 512u;
+  sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(- 80.0f, - 7.0f, 0.0f), 1.0f);
+  sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(1.0, 151.0 / 255.0, 60.0 / 255.0), 2.5f);
 }
 
 void SimpleFluid::AddSplat()
@@ -74,17 +69,12 @@ void SimpleFluid::AddSplat()
 
 void SimpleFluid::AddMultipleSplat(const int nb)
 {
-  nbSplat = nb;
+  nbSplat += nb;
 }
 
 void SimpleFluid::RemoveSplat()
 {
   addSplat = false;
-}
-
-float rd()
-{
-  return (float) rand() / (float) RAND_MAX; 
 }
 
 void SimpleFluid::Update()
@@ -94,8 +84,8 @@ void SimpleFluid::Update()
   {
     int x = std::clamp(static_cast<unsigned int>(options->simWidth * rd()), 50u, options->simWidth - 50);
     int y = std::clamp(static_cast<unsigned int>(options->simHeight * rd()), 50u, options->simHeight - 50);
-    sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(100.0f * rd() - 50.0f, 100.0f * rd() - 50.0f, 0.0f), 75.0f);
-    sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 1.0f);
+    sFact.addSplat(velocitiesTexture[READ], std::make_tuple(x, y), std::make_tuple(100.0f * rd() - 50.0f, 100.0f * rd() - 50.0f, 0.0f), 50.0f);
+    sFact.addSplat(density[READ], std::make_tuple(x, y), std::make_tuple(rd(), rd(), rd()), 2.5f);
 
     --nbSplat;
   }

@@ -158,6 +158,8 @@ void SimulationFactory::maccormackStep(const GLuint field_WRITE, const GLuint fi
   glUseProgram(maccormackProgram);
   GLuint location = glGetUniformLocation(maccormackProgram, "dt");
   glUniform1f(location, options->dt);
+  location = glGetUniformLocation(maccormackProgram, "revert");
+  glUniform1f(location, options->mcRevert);
   bindImageTexture(0, field_WRITE);
   bindTexture(1, field_n);
   bindTexture(2, field_n_hat);

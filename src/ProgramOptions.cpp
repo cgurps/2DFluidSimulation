@@ -52,6 +52,7 @@ ProgramOptions parseOptions(int argc, char* argv[])
     ("simWidth", po::value<unsigned>(&options.simWidth)->default_value(1024), "simulation width (must be a power of 2)")
     ("simHeight", po::value<unsigned>(&options.simHeight)->default_value(1024), "simulation height (must be a power of 2)")
     ("jacobi-iterations", po::value<unsigned>(&options.jacobiIterations)->default_value(50), "number of iterations for the Jacobi method")
+    ("mc-revert", po::value<float>(&options.mcRevert)->default_value(0.05), "revert parameter for the maccormack advection scheme")
   ;
 
   po::options_description po_options("sim [options]");

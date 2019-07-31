@@ -4,6 +4,7 @@
 #include "layout_size.comp"
 
 layout(location = 0) uniform float dt;
+layout(location = 1) uniform float revert;
 
 layout(rgba32f, binding = 0) uniform image2D field_WRITE;
 layout(binding = 1) uniform sampler2D field_n;
@@ -25,7 +26,7 @@ void main()
   vec2 pos = pixelCoords - dt * v;
   vec4 rClamped = clampValue(field_n, r, pixelToTexel(pos, tSize));
 
-  r = length(rClamped - r) > 0.1 ? qAdv : rClamped;
+  r = length(rClamped - r) > revert ? qAdv : rClamped;
 
   imageStore(field_WRITE, pixelCoords, r);
 }
