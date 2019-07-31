@@ -2,6 +2,10 @@
   <img width="280" height="280" src="images/blobs_1.png">
   <img width="280" height="280" src="images/blobs_2.png">
   <img width="280" height="280" src="images/blobs_3.png">
+  
+   <img width="280" height="280" src="images/smoke_1.png">
+  <img width="280" height="280" src="images/smoke_2.png">
+  <img width="280" height="280" src="images/smoke_3.png">
 </p>
 
 # 2D Fluid Simulator using OpenGL
