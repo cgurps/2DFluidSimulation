@@ -8,7 +8,7 @@
   <img width="280" height="280" src="images/smoke_3.png">
 </p>
 
-# 2D Fluid Simulator using OpenGL
+# 2D Fluid Simulator using OpenGL [![Build Status](https://travis-ci.org/cgurps/2DFluidSimulation.svg?branch=master)](https://travis-ci.org/cgurps/2DFluidSimulation)
 
 This project is an implementation of an eulerian fluid simulation on GPU using OpenGL 4.3 compute shaders capabilities.
 
