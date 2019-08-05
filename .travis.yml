@@ -2,7 +2,9 @@ dist: trusty
 language: cpp
 addons:
   apt:
+    update: true
     sources:
+      - sourceline: 'ppa:mhier/libboost-latest'
       - ubuntu-toolchain-r-test
     packages:
       - gcc-7
@@ -11,6 +13,7 @@ addons:
       - libxinerama-dev
       - libxcursor-dev
       - libxi-dev
+      - boost1.67
 script:
   - export CC=gcc-7
   - export CXX=g++-7
