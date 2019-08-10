@@ -1,14 +1,9 @@
-/**
-@image images/blobs_1.png width=280px height=280px
-*/
-  
-  
-![](images/blobs_1.png)
-![](images/blobs_2.png)
-![](images/blobs_3.png)
-![](images/smoke_1.png)
-![](images/smoke_2.png)
-![](images/smoke_3.png)
+![](blobs_1.png)
+![](blobs_2.png)
+![](blobs_3.png)
+![](smoke_1.png)
+![](smoke_2.png)
+![](smoke_3.png)
 
 # 2D Fluid Simulator using OpenGL [![Build Status](https://travis-ci.org/cgurps/2DFluidSimulation.svg?branch=master)](https://travis-ci.org/cgurps/2DFluidSimulation)
 
@@ -37,14 +32,14 @@ You can query the program options using `-h`.
 
 ## Numerical Scheme
 We solve the Navier-Stokes equation for incompressible fluids:
-![](images/equations/NS.png)
+![](NS.png)
 As every eulerian approaches, the quantites (velocties, pressure, divergence, curl and so on) are stored in a square grid. 
 The advection step uses a semi-Lagragian approach. The advection combines a Maccormack numerical scheme with a Runge Kutta method of order 4. 
 The new created extremas are clamped using values from the first advection. If the new extrama is too far from the original computed value, 
 I remove the error correction term (which boils down to reverting to the 4th order Runge Kutta approach). 
 The next step adds forces to the velocity field (note that vorticity is implemented, but not used as the advection scheme is accurate 
 enough to conserve swirls in the field). After that, the intermediate field is made incompressible using a projection method based on the Helmholtz-Hodge decomposition. I solve the associated poisson equation using the Jacobi method. The time step is computed at each iteration with
-![](images/equations/CLF.png)
+![](CLF.png)
 The maximum of the velocity field is computed through a reduce method on the GPU.
 
 ## Implementation
