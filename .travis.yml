@@ -23,6 +23,7 @@ matrix:
         - export PATH
         - git clone https://github.com/mosra/m.css.git
         - python m.css/documentation/doxygen.py --debug Doxyfile-mcss
+        - cp images html -R
       deploy:
         provider: pages
         skip_cleanup: true
