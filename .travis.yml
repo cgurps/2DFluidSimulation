@@ -1,23 +1,57 @@
-dist: trusty
-language: cpp
-addons:
-  apt:
-    update: true
-    sources:
-      - sourceline: 'ppa:mhier/libboost-latest'
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-7
-      - g++-7
-      - libxrandr-dev
-      - libxinerama-dev
-      - libxcursor-dev
-      - libxi-dev
-      - boost1.70
-script:
-  - export CC=gcc-7
-  - export CXX=g++-7
-  - mkdir build 
-  - cd build 
-  - cmake ..
-  - make
+matrix:
+  include:
+    dist: xenial
+    language: python
+    sudo: false
+    
+    # Blacklist
+    branches:
+      only:
+        - master
+    python:
+      - "3.6"
+    addons:
+      apt:
+        packages:
+          - libgs-dev
+    before_install:
+      - pip install -U pip jinja2 Pygments
+    script:
+      - curl http://doxygen.nl/files/doxygen-1.8.15.linux.bin.tar.gz --output doxygen.tar.gz
+      - tar xfv doxygen.tar.gz
+      - PATH=$PATH:doxygen-1.8.15/bin
+      - export PATH
+      - git clone https://github.com/mosra/m.css.git
+      - python m.css/documentation/doxygen.py --debug Doxyfile-mcss
+      #- doxygen Doxyfile.in
+    deploy:
+      provider: pages
+      skip_cleanup: true
+      local_dir: html
+      github_token: $GH_REPO_TOKEN
+      on:
+        branch: master
+    
+    dist: trusty
+    language: cpp
+    addons:
+      apt:
+        update: true
+        sources:
+          - sourceline: 'ppa:mhier/libboost-latest'
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-7
+          - g++-7
+          - libxrandr-dev
+          - libxinerama-dev
+          - libxcursor-dev
+          - libxi-dev
+          - boost1.70
+    script:
+      - export CC=gcc-7
+      - export CXX=g++-7
+      - mkdir build 
+      - cd build 
+      - cmake ..
+      - make
