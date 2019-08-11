@@ -1,4 +1,4 @@
-![](blobs_1.png)
+![](blobs_1.png =280x280)
 ![](blobs_2.png)
 ![](blobs_3.png)
 ![](smoke_1.png)
