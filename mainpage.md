@@ -1,4 +1,6 @@
-![](blobs_1.png) <!-- .element height="280px" width="280px" -->
+@image blobs_1.png width=250px
+
+![](blobs_1.png)
 ![](blobs_2.png)
 ![](blobs_3.png)
 ![](smoke_1.png)
