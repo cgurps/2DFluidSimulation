@@ -1,5 +1,4 @@
 @INCLUDE                = Doxyfile.in
-PROJECT_BRIEF           = "Nearest Neighbor using k-d trees"
 GENERATE_HTML           = NO
 GENERATE_XML            = YES
 XML_PROGRAMLISTING      = NO
