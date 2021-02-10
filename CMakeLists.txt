@@ -43,5 +43,5 @@ IF(NOT WIN32)
 ENDIF(NOT WIN32)
 
 ADD_CUSTOM_COMMAND(TARGET sim POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/shaders ${CMAKE_BINARY_DIR}/shaders
-  )
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/src/shaders $<TARGET_FILE_DIR:sim>/shaders)
