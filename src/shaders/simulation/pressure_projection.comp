@@ -3,7 +3,7 @@
 #include "includes.comp"
 #include "layout_size.comp"
 
-layout(rgba32f, binding = 0) uniform image2D velocities_WRITE;
+layout(rgba16f, binding = 0) uniform image2D velocities_WRITE;
 layout(binding = 1) uniform sampler2D velocities_READ;
 layout(binding = 2) uniform sampler2D pressure_READ;
 

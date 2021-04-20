@@ -1,5 +1,4 @@
-#ifndef GLFWHANDLER_H
-#define GLFWHANDLER_H
+#pragma once
 
 /**
  * @dir src
@@ -10,7 +9,7 @@
  * @file GLFWHandler.h
  * @author Thomas Caissard (\c thomas.caissard@gmail.com)
  * @date 2019/08/05
- * @brief Handler for OpenGL main rendering loop 
+ * @brief Handler for OpenGL main rendering loop
  */
 
 
@@ -34,7 +33,7 @@ class GLFWHandler
     /**
      * Default constructor deletion
      */
-    GLFWHandler() = delete; 
+    GLFWHandler() = delete;
 
     /**
      * Default constructor
@@ -84,34 +83,12 @@ class GLFWHandler
     void registerEvent();
 
     /**
-     * Vertex shader ID
-     */
-    GLuint vertex_shader;
-
-    /**
-     * Fragment shader ID
-     */
-    GLuint fragment_shader;
-
-    /**
      * Shader Program ID
      */
     GLuint shader_program;
-
-    /**
-     * VAO ID
-     */
-    GLuint vao; 
-
-    /**
-     * VBO ID
-     */
-    GLuint vbo; 
 
     /**
      * EBO ID
      */
     GLuint ebo;
 };
-
-#endif //GLFWHANDLER_H

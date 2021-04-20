@@ -5,7 +5,7 @@
 
 layout(location = 0) uniform float dt;
 
-layout(rgba32f, binding = 0) uniform image2D field_WRITE;
+layout(rgba16f, binding = 0) uniform image2D field_WRITE;
 layout(binding = 1) uniform sampler2D field_READ;
 layout(binding = 2) uniform sampler2D velocities_READ;
 

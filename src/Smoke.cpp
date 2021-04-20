@@ -18,36 +18,24 @@ Smoke::~Smoke()
 
 void Smoke::Init()
 {
-  /********** Texture Initilization **********/
-  auto f = [](unsigned, unsigned)
-      {
-        return std::make_tuple(0.0f, 0.0f,
-                               0.0f, 0.0f);
-      };
-
   density[0] = createTexture2D(options->simWidth, options->simHeight);
   density[1] = createTexture2D(options->simWidth, options->simHeight);
   density[2] = createTexture2D(options->simWidth, options->simHeight);
   density[3] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(density[0], options->simWidth, options->simHeight, f);
 
   temperature[0] = createTexture2D(options->simWidth, options->simHeight);
   temperature[1] = createTexture2D(options->simWidth, options->simHeight);
   temperature[2] = createTexture2D(options->simWidth, options->simHeight);
   temperature[3] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(temperature[0], options->simWidth, options->simHeight, f);
 
   velocitiesTexture[0] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[1] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[2] = createTexture2D(options->simWidth, options->simHeight);
   velocitiesTexture[3] = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(velocitiesTexture[0], options->simWidth, options->simHeight, f);
 
   divergenceCurlTexture = createTexture2D(options->simWidth, options->simHeight);
-  fillTextureWithFunctor(divergenceCurlTexture, options->simWidth, options->simHeight, f);
 
   divRBTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
-  fillTextureWithFunctor(divRBTexture, options->simWidth / 2, options->simHeight / 2, f);
 
   pressureRBTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
 }
@@ -72,7 +60,8 @@ void Smoke::Update()
     return (double) rand() / (double) RAND_MAX;
   };
 
-  int x = options->simWidth / 2; int y = 75;
+  const int x = options->simWidth / 2;
+  const int y = 75;
 
   sFact.addSplat(density[READ],           std::make_tuple(x, y), std::make_tuple(0.12f, 0.31f, 0.7f), 0.5f);
   sFact.addSplat(temperature[READ],       std::make_tuple(x, y), std::make_tuple(rd() * 20.0f + 10.0f, 0.0f, 0.0f), 3.0f);

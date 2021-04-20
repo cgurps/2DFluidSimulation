@@ -11,7 +11,7 @@ static void glfwErrorCallback(int error, const char* description)
 }
 
 static void mouseCallback(GLFWwindow* window, int button, int action, int)
-{ 
+{
   if(button == GLFW_MOUSE_BUTTON_LEFT)
   {
     GLFWHandler *handler = (GLFWHandler*) glfwGetWindowUserPointer(window);
@@ -32,7 +32,7 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
 
   if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
   {
-    glfwSetWindowShouldClose(window, GLFW_TRUE); 
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
 }
 
@@ -85,7 +85,8 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
 
   glfwSwapInterval(1);
 
-  GLint flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+  GLint flags;
+  glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
   if(flags & GL_CONTEXT_FLAG_DEBUG_BIT)
   {
     glEnable(GL_DEBUG_OUTPUT);
@@ -99,10 +100,7 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
   }
 
   /********** Configuring pipeline *********/
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-
-  float vertices[] = 
+  const float vertices[] =
   {
       // positions     // texture coords
       1.0f,   1.0f,    1.0f, 1.0f,
@@ -111,11 +109,13 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
     - 1.0f, - 1.0f,    0.0f, 0.0f
   };
 
-  unsigned int indices[] =
+  const std::uint32_t indices[] =
   {
     0, 1, 2,
     3, 1, 2
   };
+
+  GLuint vbo;
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -129,8 +129,8 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
   /********** Linking shaders **********/
-  vertex_shader = compileShader("shaders/vertex.glsl", GL_VERTEX_SHADER);
-  fragment_shader = compileShader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
+  const GLuint vertex_shader = compileShader("shaders/vertex.glsl", GL_VERTEX_SHADER);
+  const GLuint fragment_shader = compileShader("shaders/fragment.glsl", GL_FRAGMENT_SHADER);
 
   shader_program = glCreateProgram();
   glAttachShader(shader_program, vertex_shader);
@@ -138,6 +138,9 @@ GLFWHandler::GLFWHandler(ProgramOptions *options)
   glBindFragDataLocation(shader_program, 0, "outColor");
   glLinkProgram(shader_program);
   glUseProgram(shader_program);
+
+  glDeleteShader(vertex_shader);
+  glDeleteShader(fragment_shader);
 }
 
 GLFWHandler::~GLFWHandler()
@@ -154,7 +157,7 @@ void GLFWHandler::attachSimulation(SimulationBase* sim)
 
 void GLFWHandler::registerEvent()
 {
-  glfwSetWindowUserPointer(window, this);  
+  glfwSetWindowUserPointer(window, this);
   glfwSetMouseButtonCallback(window, mouseCallback);
   glfwSetKeyCallback(window, keyCallback);
   glfwSetWindowSizeCallback(window, windowResizeCallback);
@@ -179,19 +182,21 @@ void GLFWHandler::run()
   GLint64 startTime, stopTime;
   GLuint queryID[2];
 
-  std::chrono::high_resolution_clock::time_point 
+  std::chrono::high_resolution_clock::time_point
     start = std::chrono::high_resolution_clock::now();
   double sumOfDeltaT = 0.0;
 
   /********** Array of images for the export **********/
   std::vector<unsigned char*> buffers;
 
+  char text[100];
+
   /********** Rendering & Simulation Loop ***********/
   while (!glfwWindowShouldClose(window))
   {
     /********** Generating queries for timing **********/
     glGenQueries(2, queryID);
-    glQueryCounter(queryID[0], GL_TIMESTAMP); 
+    glQueryCounter(queryID[0], GL_TIMESTAMP);
 
     /********** Updating the simulation **********/
     simulation->Update();
@@ -207,15 +212,16 @@ void GLFWHandler::run()
     glGetQueryObjectui64v(queryID[0], GL_QUERY_RESULT, (GLuint64*) &startTime);
     glGetQueryObjectui64v(queryID[1], GL_QUERY_RESULT, (GLuint64*) &stopTime);
 
-    std::chrono::high_resolution_clock::time_point 
+    std::chrono::high_resolution_clock::time_point
       current = std::chrono::high_resolution_clock::now();
     sumOfDeltaT += options->dt;
     std::chrono::duration<double, std::milli> timeSpan = current - start;
-  
-    printf("\rDelta from real time: %.4f s (%.3f ms, %.5f dt)"
+
+    sprintf(text, "\rDelta from real time: %.4f s (%.3f ms, %.5f dt)"
         , sumOfDeltaT - timeSpan.count() / 1000.0
         , (stopTime - startTime) / 1000000.0
         , options->dt);
+    printf("%s", text);
     fflush(stdout);
 
     glfwPollEvents();
@@ -280,7 +286,7 @@ void GLFWHandler::run()
       else if (i < 100)
         sprintf(path, "frame_0%i.png", i);
       else
-        sprintf(path, "frame_%i.png", i); 
+        sprintf(path, "frame_%i.png", i);
 
       storeImage(path, buffers[i], options->simWidth, options->simHeight);
     }

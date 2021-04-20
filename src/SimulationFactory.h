@@ -7,10 +7,8 @@
 #include <functional>
 #include <tuple>
 
-void fillTextureWithFunctor(GLuint tex, 
-    const unsigned width, 
-    const unsigned height, 
-    std::function<std::tuple<float, float, float, float>(unsigned, unsigned)> f);
+void fillTextureWithFunctor(GLuint tex, const unsigned width, const unsigned height,
+  std::function<std::tuple<float, float, float, float>(unsigned, unsigned)> f);
 
 class SimulationFactory
 {

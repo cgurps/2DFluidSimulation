@@ -39,7 +39,7 @@ void APIENTRY MessageCallback(GLenum source,
       case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
       case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
   } std::cout << std::endl;
-  
+
   switch (severity)
   {
       case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
@@ -47,10 +47,8 @@ void APIENTRY MessageCallback(GLenum source,
       case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
       case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
   } std::cout << std::endl;
-  std::cout << std::endl; 
+  std::cout << std::endl;
 }
-
-
 
 GLuint createTexture2D(const unsigned width, const unsigned height)
 {
@@ -65,9 +63,8 @@ GLuint createTexture2D(const unsigned width, const unsigned height)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  std::vector<float> data(4 * width * height, 0.0f);
+  const std::vector<float> data(4 * width * height, 0.0f);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, data.data());
-  glGenerateMipmap(GL_TEXTURE_2D);
 
   glBindTexture(GL_TEXTURE_2D, 0);
 

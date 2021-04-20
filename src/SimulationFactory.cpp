@@ -5,20 +5,20 @@
 #include <cmath>
 
 /********** Utility Functions **********/
-void bindImageTexture(const GLuint binding, const GLuint tex) 
+void bindImageTexture(const GLuint binding, const GLuint tex)
 {
   glBindImageTexture(binding, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
 }
 
 void bindTexture(const GLuint binding, const GLuint tex)
 {
-  glActiveTexture(GL_TEXTURE0 + binding); 
+  glActiveTexture(GL_TEXTURE0 + binding);
   glBindTexture(GL_TEXTURE_2D, tex);
 }
 
-void fillTextureWithFunctor(GLuint tex, 
-    const unsigned width, 
-    const unsigned height, 
+void fillTextureWithFunctor(GLuint tex,
+    const unsigned width,
+    const unsigned height,
     std::function<std::tuple<float, float, float, float>(unsigned, unsigned)> f)
 {
   float *data = new float[4 * width * height];
@@ -45,24 +45,24 @@ void fillTextureWithFunctor(GLuint tex,
 }
 
 SimulationFactory::SimulationFactory(ProgramOptions *options)
-  : options(options), 
-    globalSizeX(options->simWidth / 32), 
+  : options(options),
+    globalSizeX(options->simWidth / 32),
     globalSizeY(options->simHeight / 32)
 {
   copyProgram = compileAndLinkShader("shaders/simulation/copy.comp", GL_COMPUTE_SHADER);
   maxReduceProgram = compileAndLinkShader("shaders/simulation/maxReduce.comp", GL_COMPUTE_SHADER);
-  addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER); 
+  addSmokeSpotProgram = compileAndLinkShader("shaders/simulation/addSmokeSpot.comp", GL_COMPUTE_SHADER);
   maccormackProgram = compileAndLinkShader("shaders/simulation/mccormack.comp", GL_COMPUTE_SHADER);
   RKProgram = compileAndLinkShader("shaders/simulation/RKAdvect.comp", GL_COMPUTE_SHADER);
-  divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.comp", GL_COMPUTE_SHADER); 
+  divCurlProgram = compileAndLinkShader("shaders/simulation/divCurl.comp", GL_COMPUTE_SHADER);
   divRBProgram = compileAndLinkShader("shaders/simulation/divRB.comp", GL_COMPUTE_SHADER);
-  jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.comp", GL_COMPUTE_SHADER); 
+  jacobiProgram = compileAndLinkShader("shaders/simulation/jacobi.comp", GL_COMPUTE_SHADER);
   jacobiBlackProgram = compileAndLinkShader("shaders/simulation/jacobiBlack.comp", GL_COMPUTE_SHADER);
   jacobiRedProgram = compileAndLinkShader("shaders/simulation/jacobiRed.comp", GL_COMPUTE_SHADER);
-  pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER); 
-  pressureProjectionRBProgram = compileAndLinkShader("shaders/simulation/pressureProjectionRB.comp", GL_COMPUTE_SHADER); 
-  applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.comp", GL_COMPUTE_SHADER); 
-  applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.comp", GL_COMPUTE_SHADER); 
+  pressureProjectionProgram = compileAndLinkShader("shaders/simulation/pressure_projection.comp", GL_COMPUTE_SHADER);
+  pressureProjectionRBProgram = compileAndLinkShader("shaders/simulation/pressureProjectionRB.comp", GL_COMPUTE_SHADER);
+  applyVorticityProgram = compileAndLinkShader("shaders/simulation/applyVorticity.comp", GL_COMPUTE_SHADER);
+  applyBuoyantForceProgram = compileAndLinkShader("shaders/simulation/buoyantForce.comp", GL_COMPUTE_SHADER);
   waterContinuityProgram = compileAndLinkShader("shaders/simulation/waterContinuity.comp", GL_COMPUTE_SHADER);
 
   /********** Textures for reduce **********/
@@ -71,23 +71,17 @@ SimulationFactory::SimulationFactory(ProgramOptions *options)
   int tSize = options->simWidth / 2;
   for(int i = 0; i < nb; ++i)
   {
-    reduceTextures.emplace_back(createTexture2D(tSize, tSize)); 
-    tSize /= 2; 
+    reduceTextures.emplace_back(createTexture2D(tSize, tSize));
+    tSize /= 2;
   }
 
-  auto f = [](unsigned, unsigned)
-      {
-        return std::make_tuple(0.0f, 0.0f,
-                               0.0f, 0.0f);
-      };
-
   emptyTexture = createTexture2D(options->simWidth / 2, options->simHeight / 2);
-  fillTextureWithFunctor(emptyTexture, options->simWidth / 2, options->simHeight / 2, f);
 }
 
 SimulationFactory::~SimulationFactory()
 {
   glDeleteTextures(reduceTextures.size(), reduceTextures.data());
+  glDeleteTextures(1, &emptyTexture);
 }
 
 void SimulationFactory::dispatch(const unsigned wSize, const unsigned hSize)
@@ -108,7 +102,7 @@ float SimulationFactory::maxReduce(const GLuint tex)
 {
   auto rUtil = [&](const GLuint iTex, const GLuint oTex, const unsigned size)
   {
-    glUseProgram(maxReduceProgram); 
+    glUseProgram(maxReduceProgram);
     bindImageTexture(0, oTex);
     bindTexture(1, iTex);
     unsigned dSize = std::max(size / 32, 1u);

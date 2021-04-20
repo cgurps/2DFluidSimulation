@@ -3,7 +3,7 @@
 #include "includes.comp"
 #include "layout_size.comp"
 
-layout(rgba32f, binding = 0) uniform image2D divergence;
+layout(rgba16f, binding = 0) uniform image2D divergence;
 layout(binding = 1) uniform sampler2D velocities_READ;
 
 void main()

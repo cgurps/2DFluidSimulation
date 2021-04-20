@@ -3,8 +3,8 @@
 #include "includes.comp"
 #include "layout_size.comp"
 
-layout(rgba32f, binding = 0) uniform image2D tex_WRITE;
-layout(rgba32f, binding = 1) uniform image2D tex_READ;
+layout(rgba16f, binding = 0) uniform image2D tex_WRITE;
+layout(rgba16f, binding = 1) uniform image2D tex_READ;
 
 void main()
 {
